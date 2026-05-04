@@ -1,62 +1,157 @@
-# 🚀 TURNOW API - Testing Guide
+# 🚀 TURNOW API - Setup Local + API Remota
 
-**API está LIVE en:** `https://dev-turnow.fly.dev/api`
+**Opción 1 - API Remota (RECOMENDADO para desarrollo local):**
+- Frontend: `http://localhost:3000` (tu máquina)
+- API: `https://apidev-turnow.shiftya.online` (Fly.io)
+
+**Opción 2 - Todo local:**
+- Frontend: `http://localhost:3000` (tu máquina)
+- API: `http://localhost:8080` (Spring Boot local)
 
 ---
 
-## ✅ Verificar que API funciona (rápido)
+## ✅ Setup: Frontend Local + API Remota
+
+### Paso 1: Configurar URL de API en el Frontend
+
+En tu proyecto React/Vite, crea o actualiza el archivo `.env.local`:
+
+```env
+VITE_API_BASE_URL=https://apidev-turnow.shiftya.online
+```
+
+### Paso 2: Usar la URL en tu código
+
+En tu código React (por ejemplo, en un archivo de configuración):
+
+```javascript
+// src/config/api.js
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+export const apiClient = {
+  login: (email, password) =>
+    fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    }).then(r => r.json()),
+  
+  getTenantOverview: (tenantId, token) =>
+    fetch(`${API_BASE_URL}/api/admin/tenant/${tenantId}/overview`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(r => r.json()),
+  // ... más endpoints
+};
+```
+
+O si usas Axios:
+
+```javascript
+// src/config/axios.js
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000
+});
+
+// Interceptor para agregar token
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;
+```
+
+### Paso 3: Levantar el frontend
 
 ```bash
-curl https://dev-turnow.fly.dev/api/health
-# Respuesta: "OK"
+npm run dev
+# O con Vite:
+vite
+```
+
+Se abrirá en `http://localhost:3000` (o el puerto que uses)
+
+---
+
+## ✅ Testear conexión
+
+### Test 1: Verificar CORS funciona
+
+```bash
+curl -H "Origin: http://localhost:3000" \
+  https://apidev-turnow.shiftya.online/api/health
+```
+
+Debe responder: `"OK"` sin errores CORS
+
+### Test 2: Login desde local
+
+```bash
+curl -X POST http://localhost:3000/api/proxy/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123"}'
+```
+
+O directamente desde tu navegador (console):
+
+```javascript
+fetch('https://apidev-turnow.shiftya.online/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ 
+    email: 'user@example.com', 
+    password: 'password123' 
+  })
+})
+  .then(r => r.json())
+  .then(data => console.log(data))
+  .catch(e => console.error(e))
 ```
 
 ---
 
-## 📋 Todos los Endpoints
+## 📋 Todos los Endpoints (usa https://apidev-turnow.shiftya.online)
 
-### 1️⃣ Health Check (sin autenticación)
+### 1️⃣ Health Check
 ```bash
-curl https://dev-turnow.fly.dev/api/health
-curl https://dev-turnow.fly.dev/api/health/live
+curl https://apidev-turnow.shiftya.online/api/health
 ```
 
 ### 2️⃣ Login
 ```bash
-curl -X POST https://dev-turnow.fly.dev/api/auth/login \
+curl -X POST https://apidev-turnow.shiftya.online/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
     "password": "password123"
   }'
 ```
-**Respuesta:** Token JWT + datos del usuario
 
-### 3️⃣ Public Booking (sin autenticación - para clientes)
+### 3️⃣ Public Booking (sin autenticación)
 
-#### Obtener info del negocio
 ```bash
-curl https://dev-turnow.fly.dev/api/public/tenant/{slug}
-```
+# Obtener info del negocio
+curl https://apidev-turnow.shiftya.online/api/public/tenant/{slug}
 
-#### Listar servicios
-```bash
-curl https://dev-turnow.fly.dev/api/public/tenant/{slug}/services
-```
+# Listar servicios
+curl https://apidev-turnow.shiftya.online/api/public/tenant/{slug}/services
 
-#### Listar profesionales
-```bash
-curl https://dev-turnow.fly.dev/api/public/tenant/{slug}/professionals
-```
+# Listar profesionales
+curl https://apidev-turnow.shiftya.online/api/public/tenant/{slug}/professionals
 
-#### Obtener horarios disponibles
-```bash
-curl "https://dev-turnow.fly.dev/api/public/tenant/{slug}/slots?date=2026-05-10&professionalId={id}&serviceId={id}"
-```
+# Obtener horarios disponibles
+curl "https://apidev-turnow.shiftya.online/api/public/tenant/{slug}/slots?date=2026-05-10&professionalId={id}&serviceId={id}"
 
-#### Crear cita
-```bash
-curl -X POST https://dev-turnow.fly.dev/api/public/tenant/{slug}/appointments \
+# Crear cita
+curl -X POST https://apidev-turnow.shiftya.online/api/public/tenant/{slug}/appointments \
   -H "Content-Type: application/json" \
   -d '{
     "professionalId": "uuid",
@@ -68,40 +163,27 @@ curl -X POST https://dev-turnow.fly.dev/api/public/tenant/{slug}/appointments \
     "startTime": "09:00",
     "clientNotes": "Primera vez"
   }'
+
+# Cancelar cita
+curl -X POST https://apidev-turnow.shiftya.online/api/public/appointments/cancel/{token}
 ```
 
-#### Cancelar cita
+### 4️⃣ Admin Tenant (con autenticación)
+
 ```bash
-curl -X POST https://dev-turnow.fly.dev/api/public/appointments/cancel/{token}
-```
-
----
-
-## 4️⃣ Admin Tenant (con autenticación - dueño del negocio)
-
-### Dashboard
-```bash
+# Dashboard
 curl -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/overview
-```
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/overview
 
-### Citas
-```bash
+# Citas
 curl -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/appointments
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/appointments
 
-# Con fecha específica
+# Profesionales
 curl -H "Authorization: Bearer {token}" \
-  "https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/appointments?date=2026-05-10"
-```
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/professionals
 
-### Profesionales
-```bash
-# Listar
-curl -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/professionals
-
-# Crear
+# Crear profesional
 curl -X POST -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -112,33 +194,23 @@ curl -X POST -H "Authorization: Bearer {token}" \
     "speciality": "Cardiología",
     "active": true
   }' \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/professionals
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/professionals
 
-# Actualizar
+# Actualizar profesional
 curl -X PUT -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Juan",
-    "lastName": "Pérez",
-    "email": "juan@example.com",
-    "phone": "+54111234567",
-    "speciality": "Cardiología",
-    "active": true
-  }' \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/professionals/{professionalId}
+  -d '{...}' \
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/professionals/{professionalId}
 
-# Eliminar
+# Eliminar profesional
 curl -X DELETE -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/professionals/{professionalId}
-```
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/professionals/{professionalId}
 
-### Servicios
-```bash
-# Listar
+# Servicios
 curl -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/services
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/services
 
-# Crear
+# Crear servicio
 curl -X POST -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -148,27 +220,19 @@ curl -X POST -H "Authorization: Bearer {token}" \
     "price": 500.0,
     "active": true
   }' \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/services
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/services
 
-# Actualizar
+# Actualizar servicio
 curl -X PUT -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Consulta Médica",
-    "description": "Consulta general actualizada",
-    "duration": 45,
-    "price": 600.0,
-    "active": true
-  }' \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/services/{serviceId}
+  -d '{...}' \
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/services/{serviceId}
 
-# Eliminar
+# Eliminar servicio
 curl -X DELETE -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/services/{serviceId}
-```
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/services/{serviceId}
 
-### Configuración
-```bash
+# Configuración
 curl -X PUT -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -179,31 +243,21 @@ curl -X PUT -H "Authorization: Bearer {token}" \
     "slug": "my-slug",
     "primaryColor": "#6366f1"
   }' \
-  https://dev-turnow.fly.dev/api/admin/tenant/{tenantId}/settings
+  https://apidev-turnow.shiftya.online/api/admin/tenant/{tenantId}/settings
 ```
 
----
+### 5️⃣ Super Admin (con autenticación)
 
-## 5️⃣ Super Admin (con autenticación - administrador de plataforma)
-
-### Dashboard global
 ```bash
+# Dashboard global
 curl -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/super/overview
-```
+  https://apidev-turnow.shiftya.online/api/admin/super/overview
 
-### Listar negocios
-```bash
+# Listar negocios
 curl -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/super/tenants
+  https://apidev-turnow.shiftya.online/api/admin/super/tenants
 
-# Con búsqueda
-curl -H "Authorization: Bearer {token}" \
-  "https://dev-turnow.fly.dev/api/admin/super/tenants?search=keyword"
-```
-
-### Crear negocio
-```bash
+# Crear negocio
 curl -X POST -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -214,21 +268,17 @@ curl -X POST -H "Authorization: Bearer {token}" \
     "address": "Calle 123",
     "plan": "PROFESSIONAL"
   }' \
-  https://dev-turnow.fly.dev/api/admin/super/tenants
-```
+  https://apidev-turnow.shiftya.online/api/admin/super/tenants
 
-### Cambiar estado
-```bash
+# Cambiar estado
 curl -X PATCH -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{"status": "SUSPENDED"}' \
-  https://dev-turnow.fly.dev/api/admin/super/tenants/{tenantId}/status
-```
+  https://apidev-turnow.shiftya.online/api/admin/super/tenants/{tenantId}/status
 
-### Eliminar negocio
-```bash
+# Eliminar negocio
 curl -X DELETE -H "Authorization: Bearer {token}" \
-  https://dev-turnow.fly.dev/api/admin/super/tenants/{tenantId}
+  https://apidev-turnow.shiftya.online/api/admin/super/tenants/{tenantId}
 ```
 
 ---
@@ -237,28 +287,28 @@ curl -X DELETE -H "Authorization: Bearer {token}" \
 
 ### Guardar token para reutilizar
 ```bash
-TOKEN=$(curl -s -X POST https://dev-turnow.fly.dev/api/auth/login \
+TOKEN=$(curl -s -X POST https://apidev-turnow.shiftya.online/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"pass123"}' | jq -r '.token')
 
 # Luego úsalo en otras peticiones
 curl -H "Authorization: Bearer $TOKEN" \
-  https://dev-turnow.fly.dev/api/admin/super/overview
+  https://apidev-turnow.shiftya.online/api/admin/super/overview
 ```
 
 ### Ver JSON formateado (requiere jq)
 ```bash
-curl https://dev-turnow.fly.dev/api/admin/super/overview | jq .
+curl https://apidev-turnow.shiftya.online/api/admin/super/overview | jq .
 ```
 
 ### Ver headers de respuesta
 ```bash
-curl -i https://dev-turnow.fly.dev/api/health
+curl -i https://apidev-turnow.shiftya.online/api/health
 ```
 
 ### Guardar respuesta en archivo
 ```bash
-curl https://dev-turnow.fly.dev/api/admin/super/overview > response.json
+curl https://apidev-turnow.shiftya.online/api/admin/super/overview > response.json
 ```
 
 ---
@@ -294,6 +344,14 @@ Obtén el token con `/auth/login`
 
 ---
 
-**API Live:** `https://dev-turnow.fly.dev/api`  
-**Status:** ✅ Funcionando  
-**Total Endpoints:** 30+
+## 🚀 Próximos pasos
+
+1. Configura `.env.local` en tu frontend con la URL remota
+2. Levanta el frontend local con `npm run dev`
+3. Prueba login desde la app
+4. Verifica que CORS funcione (no debería haber errores en console)
+5. ¡Desarrolla!
+
+**API remota:** `https://apidev-turnow.shiftya.online`  
+**Frontend local:** `http://localhost:3000`  
+**Status:** ✅ Funcionando
