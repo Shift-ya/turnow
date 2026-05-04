@@ -1,6 +1,7 @@
 package com.turnow;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -18,6 +19,7 @@ public class turnowApplication {
 
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(turnowApplication.class);
+        app.setWebApplicationType(WebApplicationType.SERVLET);
         app.run(args);
     }
 }
