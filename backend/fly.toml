@@ -11,8 +11,6 @@ primary_region = 'iad'
 [env]
   SPRING_PROFILES_ACTIVE = "prod"
   PORT = "8080"
-  SERVER_ADDRESS = "0.0.0.0"
-  JAVA_TOOL_OPTIONS = "-Dserver.address=0.0.0.0 -Djava.net.preferIPv4Stack=true"
 
 [http_service]
   internal_port = 8080
