@@ -30,10 +30,10 @@ primary_region = 'iad'
 
 [checks]
   [checks.http]
-    grace_period = "180s"
+    grace_period = "40s"
     interval = "10s"
     method = "GET"
-    path = "/actuator/health"
+    path = "/api/health"
     protocol = "http"
-    timeout = "10s"
+    timeout = "5s"
     type = "http"
