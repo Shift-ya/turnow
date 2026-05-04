@@ -62,10 +62,15 @@ app:
   frontend-url: ${FRONTEND_URL}
 
 management:
+  server:
+    base-path: /
   endpoints:
     web:
       exposure:
         include: health
+  endpoint:
+    health:
+      show-details: never
 
 logging:
   level:

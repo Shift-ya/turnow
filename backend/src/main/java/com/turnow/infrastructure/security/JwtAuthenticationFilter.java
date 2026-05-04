@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Filtro que intercepta cada request y valida el JWT.
@@ -30,8 +31,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
+    /** Paths that must never require authentication (e.g. health-check probes). */
+    private static final List<String> EXCLUDED_PATHS = List.of("/actuator/health", "/actuator");
+
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return EXCLUDED_PATHS.stream().anyMatch(path::startsWith);
+    }
 
     @Override
     protected void doFilterInternal(
