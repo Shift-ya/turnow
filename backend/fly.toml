@@ -11,6 +11,7 @@ primary_region = 'iad'
 [env]
   SPRING_PROFILES_ACTIVE = "prod"
   PORT = "8080"
+  SERVER_ADDRESS = "0.0.0.0"
 
 [http_service]
   internal_port = 8080
