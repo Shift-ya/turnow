@@ -8,8 +8,12 @@ primary_region = 'iad'
 
 [build]
 
+[env]
+  SPRING_PROFILES_ACTIVE = "prod"
+  PORT = "8080"
+
 [http_service]
-  internal_port = 8081
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -21,3 +25,13 @@ primary_region = 'iad'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 1024
+
+[checks]
+  [checks.http]
+    grace_period = "30s"
+    interval = "10s"
+    method = "GET"
+    path = "/actuator/health"
+    protocol = "http"
+    timeout = "5s"
+    type = "http"
