@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for dev-turnow on 2026-05-04T20:42:07Z
+# fly.toml app configuration file generated for dev-turnow on 2026-05-05T01:54:55Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -27,7 +27,7 @@ primary_region = 'gru'
     type = 'http'
     interval = '10s'
     timeout = '5s'
-    grace_period = '140s'
+    grace_period = '2m20s'
     method = 'GET'
     path = '/api/actuator/health'
     protocol = 'http'
