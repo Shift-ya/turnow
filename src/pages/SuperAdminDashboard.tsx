@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Building2, Users, CalendarDays, DollarSign, Activity, Search, Eye, Pause, Trash2, LogOut, BarChart3, Settings, Bell, Menu, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { api, type ApiGlobalOverview, type ApiTenant } from '../lib/api';
 
-interface Props {
-  onNavigate: (page: string) => void;
-}
-
-export default function SuperAdminDashboard({ onNavigate }: Props) {
+export default function SuperAdminDashboard() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'plans'>('overview');
   const [search, setSearch] = useState('');
@@ -44,7 +42,7 @@ export default function SuperAdminDashboard({ onNavigate }: Props) {
 
   const handleLogout = () => {
     logout();
-    onNavigate('landing');
+    navigate('/', { replace: true });
   };
 
   const createTenant = async () => {

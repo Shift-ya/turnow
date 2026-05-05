@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Users, Briefcase, BarChart3, Settings, LogOut, Menu, X, Bell, Plus, Clock, DollarSign, UserCheck, TrendingUp, Edit2, Trash2, Power } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import { EditProfessionalDialog } from '../components/dialogs/EditProfessionalDialog';
@@ -11,13 +12,10 @@ import { useToast } from '../hooks/useToast';
 import { TOAST_MESSAGES } from '../types/toast';
 import { api, type ApiAppointment, type ApiProfessional, type ApiService, type ApiTenant } from '../lib/api';
 
-interface Props {
-  onNavigate: (page: string) => void;
-}
-
 type Tab = 'dashboard' | 'calendar' | 'professionals' | 'services' | 'settings';
 
-export default function TenantAdminDashboard({ onNavigate }: Props) {
+export default function TenantAdminDashboard() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { success, error: showError } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -74,7 +72,7 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
 
   const handleLogout = () => {
     logout();
-    onNavigate('landing');
+    navigate('/', { replace: true });
   };
 
   const getServiceName = (id: string) => services.find((s) => s.id === id)?.name || 'Servicio';
@@ -309,7 +307,7 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
           ))}
         </nav>
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
-          <button onClick={() => onNavigate('booking')} className="w-full mb-2 py-2 text-sm font-medium text-primary-600 border border-primary-200 rounded-xl hover:bg-primary-50 transition">
+          <button onClick={() => navigate('/booking')} className="w-full mb-2 py-2 text-sm font-medium text-primary-600 border border-primary-200 rounded-xl hover:bg-primary-50 transition">
             Ver pagina publica
           </button>
           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-500 hover:text-gray-700 transition">

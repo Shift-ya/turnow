@@ -10,10 +10,13 @@ import com.turnow.domain.tenant.entity.Tenant;
 import com.turnow.domain.tenant.entity.TenantSettings;
 import com.turnow.domain.tenant.repository.TenantRepository;
 import com.turnow.domain.tenant.repository.TenantSettingsRepository;
+import com.turnow.domain.user.entity.User;
 import com.turnow.infrastructure.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -32,7 +35,8 @@ public class TenantAdminController {
     private final ServiceRepository serviceRepository;
 
     @GetMapping("/{tenantId}/overview")
-    public ResponseEntity<TenantOverviewDto> getOverview(@PathVariable UUID tenantId) {
+    public ResponseEntity<TenantOverviewDto> getOverview(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId) {
+        requireTenantAccess(currentUser, tenantId);
         Tenant tenant = getTenant(tenantId);
 
         List<Appointment> allAppointments = appointmentRepository.findByTenantId(tenantId, org.springframework.data.domain.Pageable.unpaged()).getContent();
@@ -91,9 +95,11 @@ public class TenantAdminController {
 
     @GetMapping("/{tenantId}/appointments")
     public ResponseEntity<List<AppointmentDto>> getAppointments(
+        @AuthenticationPrincipal User currentUser,
         @PathVariable UUID tenantId,
         @RequestParam(required = false) LocalDate date
     ) {
+        requireTenantAccess(currentUser, tenantId);
         List<Appointment> appointments = date == null
             ? appointmentRepository.findByTenantId(tenantId, org.springframework.data.domain.Pageable.unpaged()).getContent()
             : appointmentRepository.findByTenantIdAndAppointmentDate(tenantId, date);
@@ -102,12 +108,14 @@ public class TenantAdminController {
     }
 
     @GetMapping("/{tenantId}/professionals")
-    public ResponseEntity<List<ProfessionalDto>> getProfessionals(@PathVariable UUID tenantId) {
+    public ResponseEntity<List<ProfessionalDto>> getProfessionals(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId) {
+        requireTenantAccess(currentUser, tenantId);
         return ResponseEntity.ok(professionalRepository.findByTenantId(tenantId).stream().map(this::toProfessionalDto).toList());
     }
 
     @PostMapping("/{tenantId}/professionals")
-    public ResponseEntity<ProfessionalDto> createProfessional(@PathVariable UUID tenantId, @RequestBody ProfessionalUpsertRequest request) {
+    public ResponseEntity<ProfessionalDto> createProfessional(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId, @RequestBody ProfessionalUpsertRequest request) {
+        requireTenantAccess(currentUser, tenantId);
         Professional professional = Professional.builder()
             .tenantId(tenantId)
             .firstName(request.firstName())
@@ -122,10 +130,12 @@ public class TenantAdminController {
 
     @PutMapping("/{tenantId}/professionals/{professionalId}")
     public ResponseEntity<ProfessionalDto> updateProfessional(
+        @AuthenticationPrincipal User currentUser,
         @PathVariable UUID tenantId,
         @PathVariable UUID professionalId,
         @RequestBody ProfessionalUpsertRequest request
     ) {
+        requireTenantAccess(currentUser, tenantId);
         Professional professional = professionalRepository.findByIdAndTenantId(professionalId, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Profesional no encontrado"));
         professional.setFirstName(request.firstName());
@@ -138,7 +148,8 @@ public class TenantAdminController {
     }
 
     @DeleteMapping("/{tenantId}/professionals/{professionalId}")
-    public ResponseEntity<Void> deactivateProfessional(@PathVariable UUID tenantId, @PathVariable UUID professionalId) {
+    public ResponseEntity<Void> deactivateProfessional(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId, @PathVariable UUID professionalId) {
+        requireTenantAccess(currentUser, tenantId);
         Professional professional = professionalRepository.findByIdAndTenantId(professionalId, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Profesional no encontrado"));
         professional.setActive(false);
@@ -147,12 +158,14 @@ public class TenantAdminController {
     }
 
     @GetMapping("/{tenantId}/services")
-    public ResponseEntity<List<ServiceDto>> getServices(@PathVariable UUID tenantId) {
+    public ResponseEntity<List<ServiceDto>> getServices(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId) {
+        requireTenantAccess(currentUser, tenantId);
         return ResponseEntity.ok(serviceRepository.findAll().stream().filter(s -> s.getTenantId().equals(tenantId)).map(this::toServiceDto).toList());
     }
 
     @PostMapping("/{tenantId}/services")
-    public ResponseEntity<ServiceDto> createService(@PathVariable UUID tenantId, @RequestBody ServiceUpsertRequest request) {
+    public ResponseEntity<ServiceDto> createService(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId, @RequestBody ServiceUpsertRequest request) {
+        requireTenantAccess(currentUser, tenantId);
         Service service = Service.builder()
             .tenantId(tenantId)
             .name(request.name())
@@ -166,10 +179,12 @@ public class TenantAdminController {
 
     @PutMapping("/{tenantId}/services/{serviceId}")
     public ResponseEntity<ServiceDto> updateService(
+        @AuthenticationPrincipal User currentUser,
         @PathVariable UUID tenantId,
         @PathVariable UUID serviceId,
         @RequestBody ServiceUpsertRequest request
     ) {
+        requireTenantAccess(currentUser, tenantId);
         Service service = serviceRepository.findByIdAndTenantId(serviceId, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado"));
         service.setName(request.name());
@@ -181,7 +196,8 @@ public class TenantAdminController {
     }
 
     @DeleteMapping("/{tenantId}/services/{serviceId}")
-    public ResponseEntity<Void> deleteService(@PathVariable UUID tenantId, @PathVariable UUID serviceId) {
+    public ResponseEntity<Void> deleteService(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId, @PathVariable UUID serviceId) {
+        requireTenantAccess(currentUser, tenantId);
         Service service = serviceRepository.findByIdAndTenantId(serviceId, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado"));
         serviceRepository.delete(service);
@@ -189,7 +205,8 @@ public class TenantAdminController {
     }
 
     @PutMapping("/{tenantId}/settings")
-    public ResponseEntity<TenantDto> updateSettings(@PathVariable UUID tenantId, @RequestBody TenantSettingsRequest request) {
+    public ResponseEntity<TenantDto> updateSettings(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId, @RequestBody TenantSettingsRequest request) {
+        requireTenantAccess(currentUser, tenantId);
         Tenant tenant = getTenant(tenantId);
         tenant.setBusinessName(request.businessName());
         tenant.setEmail(request.email());
@@ -279,6 +296,20 @@ public class TenantAdminController {
             s.getActive(),
             "General"
         );
+    }
+
+    private void requireTenantAccess(User currentUser, UUID tenantId) {
+        if (currentUser == null) {
+            throw new AccessDeniedException("No autorizado");
+        }
+
+        if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
+            return;
+        }
+
+        if (currentUser.getTenantId() == null || !currentUser.getTenantId().equals(tenantId)) {
+            throw new AccessDeniedException("No autorizado");
+        }
     }
 
     public record TenantOverviewDto(

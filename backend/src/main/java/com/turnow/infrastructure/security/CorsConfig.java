@@ -15,7 +15,7 @@ public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
-        @Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOrigins
+        @Value("${app.cors.allowed-origins:http://localhost:5173,https://dev.shiftya.online,https://www.shiftya.online}") String allowedOrigins
     ) {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());

@@ -2,10 +2,12 @@ package com.turnow.api;
 
 import com.turnow.domain.tenant.entity.Tenant;
 import com.turnow.domain.tenant.repository.TenantRepository;
+import com.turnow.domain.user.entity.User;
 import com.turnow.infrastructure.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +21,8 @@ public class SuperAdminController {
     private final TenantRepository tenantRepository;
 
     @GetMapping("/overview")
-    public ResponseEntity<GlobalOverviewDto> overview() {
+    public ResponseEntity<GlobalOverviewDto> overview(@AuthenticationPrincipal User currentUser) {
+        requireSuperAdmin(currentUser);
         List<Tenant> tenants = tenantRepository.findAll();
         long activeTenants = tenants.stream().filter(t -> t.getStatus() == Tenant.TenantStatus.ACTIVE).count();
         long basic = tenants.stream().filter(t -> t.getPlan() == Tenant.SubscriptionPlan.BASIC).count();
@@ -39,7 +42,8 @@ public class SuperAdminController {
     }
 
     @GetMapping("/tenants")
-    public ResponseEntity<List<TenantDto>> tenants(@RequestParam(required = false) String search) {
+    public ResponseEntity<List<TenantDto>> tenants(@AuthenticationPrincipal User currentUser, @RequestParam(required = false) String search) {
+        requireSuperAdmin(currentUser);
         String query = search == null ? "" : search.toLowerCase();
         List<TenantDto> response = tenantRepository.findAll().stream()
             .filter(t ->
@@ -53,7 +57,8 @@ public class SuperAdminController {
     }
 
     @PostMapping("/tenants")
-    public ResponseEntity<TenantDto> createTenant(@RequestBody TenantCreateRequest request) {
+    public ResponseEntity<TenantDto> createTenant(@AuthenticationPrincipal User currentUser, @RequestBody TenantCreateRequest request) {
+        requireSuperAdmin(currentUser);
         Tenant tenant = Tenant.builder()
             .businessName(request.name())
             .slug(request.slug())
@@ -68,7 +73,8 @@ public class SuperAdminController {
     }
 
     @PatchMapping("/tenants/{tenantId}/status")
-    public ResponseEntity<TenantDto> updateStatus(@PathVariable UUID tenantId, @RequestBody TenantStatusRequest request) {
+    public ResponseEntity<TenantDto> updateStatus(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId, @RequestBody TenantStatusRequest request) {
+        requireSuperAdmin(currentUser);
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant no encontrado"));
         tenant.setStatus(Tenant.TenantStatus.valueOf(request.status()));
@@ -76,7 +82,8 @@ public class SuperAdminController {
     }
 
     @DeleteMapping("/tenants/{tenantId}")
-    public ResponseEntity<Void> deleteTenant(@PathVariable UUID tenantId) {
+    public ResponseEntity<Void> deleteTenant(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId) {
+        requireSuperAdmin(currentUser);
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant no encontrado"));
         tenantRepository.delete(tenant);
@@ -130,4 +137,10 @@ public class SuperAdminController {
     ) {}
 
     public record TenantStatusRequest(String status) {}
+
+    private void requireSuperAdmin(User currentUser) {
+        if (currentUser == null || currentUser.getRole() != User.Role.SUPER_ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("No autorizado");
+        }
+    }
 }

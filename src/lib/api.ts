@@ -1,14 +1,41 @@
 import { getApiBaseUrl } from './runtimeConfig';
 
+const TOKEN_KEY = 'turnow_token';
+
+export function getStoredToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredToken(token: string | null) {
+  try {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch {
+    // no-op
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const apiBase = await getApiBaseUrl();
+  const token = getStoredToken();
+  const { headers: initHeaders, ...restInit } = init || {};
+
+  const headers = new Headers(initHeaders || {});
+  headers.set('Content-Type', 'application/json');
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
 
   const res = await fetch(`${apiBase}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
-    ...init,
+    headers,
+    ...restInit,
   });
 
   if (!res.ok) {
@@ -29,11 +56,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export interface ApiUser {
-  id: string;
+export interface ApiLoginResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  userId: string;
   tenantId: string | null;
   email: string;
-  name: string;
+  fullName: string;
   role: 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'STAFF' | 'CLIENT';
 }
 
@@ -133,7 +163,7 @@ export interface PublicSlots {
 
 export const api = {
   login: (email: string, password: string) =>
-    request<ApiUser>('/auth/login', {
+    request<ApiLoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),

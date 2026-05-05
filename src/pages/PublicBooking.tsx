@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Clock, ArrowLeft, ArrowRight, CheckCircle2, User, Mail, Phone, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { api, type ApiProfessional, type ApiService, type PublicTenant } from '../lib/api';
 import { useToast } from '../hooks/useToast';
 import { TOAST_MESSAGES } from '../types/toast';
-
-interface Props {
-  onNavigate: (page: string) => void;
-}
 
 type Step = 1 | 2 | 3;
 
@@ -19,7 +16,8 @@ function toIsoDate(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-export default function PublicBooking({ onNavigate }: Props) {
+export default function PublicBooking() {
+  const navigate = useNavigate();
   const { success, error: showError } = useToast();
   const [tenant, setTenant] = useState<PublicTenant | null>(null);
   const [services, setServices] = useState<ApiService[]>([]);
@@ -148,7 +146,7 @@ export default function PublicBooking({ onNavigate }: Props) {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={() => onNavigate('landing')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
             <ArrowLeft size={16} /> Volver
           </button>
           <div className="flex items-center gap-3">

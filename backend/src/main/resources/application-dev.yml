@@ -54,7 +54,7 @@ app:
     refresh-expiration: ${JWT_REFRESH:604800000}
 
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000,https://dev.shiftya.online,https://www.shiftya.online}
 
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
 

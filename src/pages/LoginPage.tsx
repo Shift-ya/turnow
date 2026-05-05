@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { Calendar, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { TOAST_MESSAGES } from '../types/toast';
 
-interface Props {
-  onNavigate: (page: string) => void;
-}
-
-export default function LoginPage({ onNavigate }: Props) {
+export default function LoginPage() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const { success, error: showError } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +34,7 @@ export default function LoginPage({ onNavigate }: Props) {
 
     if (ok) {
       success(TOAST_MESSAGES.auth.loginSuccess);
-      onNavigate('dashboard');
+      navigate('/dashboard', { replace: true });
     } else {
       setError('Credenciales invalidas');
       showError(TOAST_MESSAGES.auth.loginError);
@@ -50,7 +48,7 @@ export default function LoginPage({ onNavigate }: Props) {
 
     if (ok) {
       success(TOAST_MESSAGES.auth.loginSuccess);
-      onNavigate('dashboard');
+      navigate('/dashboard', { replace: true });
     } else {
       setError('No se pudo iniciar sesion rapida');
       showError(TOAST_MESSAGES.auth.loginError);
@@ -60,7 +58,7 @@ export default function LoginPage({ onNavigate }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="p-4">
-        <button onClick={() => window.location.href = '/'} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
           <ArrowLeft size={16} /> Volver al sitio
         </button>
       </div>

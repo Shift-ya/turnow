@@ -57,7 +57,7 @@ app:
 
   cors:
     # 🔥 preparado para futuro frontend deployado
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,https://dev.shiftya.online,https://www.shiftya.online}
 
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
 

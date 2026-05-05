@@ -1,13 +1,18 @@
 package com.turnow.api;
 
 import com.turnow.domain.auth.dto.LoginRequest;
+import com.turnow.domain.auth.dto.AuthResponse;
 import com.turnow.domain.user.entity.User;
 import com.turnow.domain.user.repository.UserRepository;
 import com.turnow.infrastructure.exception.BusinessException;
+import com.turnow.infrastructure.security.JwtTokenProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/auth")
@@ -15,9 +20,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final UserRepository userRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         User user = userRepository.findByEmail(request.email().toLowerCase())
             .orElseThrow(() -> new BusinessException("Credenciales invalidas"));
 
@@ -25,26 +32,18 @@ public class AuthController {
             throw new BusinessException("Usuario inactivo");
         }
 
-        if (!request.password().equals(user.getPasswordHash())) {
+        if (!isPasswordValid(request.password(), user.getPasswordHash())) {
             throw new BusinessException("Credenciales invalidas");
         }
 
-        return ResponseEntity.ok(
-            new LoginResponse(
-                user.getId().toString(),
-                user.getTenantId() == null ? null : user.getTenantId().toString(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getRole().name()
-            )
-        );
+        String token = jwtTokenProvider.generateToken(user);
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return ResponseEntity.ok(AuthResponse.of(token, 86400000L, user));
     }
 
-    public record LoginResponse(
-        String id,
-        String tenantId,
-        String email,
-        String name,
-        String role
-    ) {}
+    private boolean isPasswordValid(String rawPassword, String storedPassword) {
+        return passwordEncoder.matches(rawPassword, storedPassword) || rawPassword.equals(storedPassword);
+    }
 }

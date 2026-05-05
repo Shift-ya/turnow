@@ -46,7 +46,10 @@ export async function getRuntimeConfig(): Promise<AppConfig> {
     const hostname = window.location.hostname;
 
     if (isLocalHost(hostname)) {
-      return normalizeConfig(LOCAL_CONFIG);
+      return normalizeConfig({
+        ...LOCAL_CONFIG,
+        landingUrl: window.location.origin,
+      });
     }
 
     const configFile = isDevHost(hostname) ? '/config.development.json' : '/config.json';

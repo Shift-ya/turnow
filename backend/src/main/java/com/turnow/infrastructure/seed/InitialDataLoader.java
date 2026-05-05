@@ -17,6 +17,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -37,6 +38,7 @@ public class InitialDataLoader implements CommandLineRunner {
     private final ServiceRepository serviceRepository;
     private final AvailabilityRepository availabilityRepository;
     private final AppointmentRepository appointmentRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -80,7 +82,7 @@ public class InitialDataLoader implements CommandLineRunner {
         userRepository.save(
             User.builder()
                 .email("admin@turnow.com")
-                .passwordHash("demo123")
+                .passwordHash(passwordEncoder.encode("demo123"))
                 .firstName("Carlos")
                 .lastName("Admin")
                 .role(User.Role.SUPER_ADMIN)
@@ -93,7 +95,7 @@ public class InitialDataLoader implements CommandLineRunner {
             User.builder()
                 .tenantId(bellaVida.getId())
                 .email("maria@bellavida.com")
-                .passwordHash("demo123")
+                .passwordHash(passwordEncoder.encode("demo123"))
                 .firstName("Maria")
                 .lastName("Lopez")
                 .role(User.Role.TENANT_ADMIN)
@@ -106,7 +108,7 @@ public class InitialDataLoader implements CommandLineRunner {
             User.builder()
                 .tenantId(bellaVida.getId())
                 .email("pedro@bellavida.com")
-                .passwordHash("demo123")
+                .passwordHash(passwordEncoder.encode("demo123"))
                 .firstName("Pedro")
                 .lastName("Garcia")
                 .role(User.Role.STAFF)
@@ -119,7 +121,7 @@ public class InitialDataLoader implements CommandLineRunner {
             User.builder()
                 .tenantId(fitZone.getId())
                 .email("ana@fitzone.com")
-                .passwordHash("demo123")
+                .passwordHash(passwordEncoder.encode("demo123"))
                 .firstName("Ana")
                 .lastName("Martinez")
                 .role(User.Role.TENANT_ADMIN)
