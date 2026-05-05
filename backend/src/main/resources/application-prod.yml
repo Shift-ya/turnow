@@ -16,9 +16,9 @@ spring:
     password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 30
-      minimum-idle: 10
-      connection-timeout: 60000
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
       connection-test-query: "SELECT 1"
@@ -26,23 +26,21 @@ spring:
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: ${HIBERNATE_DDL_AUTO:validate}
+      # 🔥 IMPORTANTE: para primer deploy usar update
+      ddl-auto: ${HIBERNATE_DDL_AUTO:update}
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
         default_schema: public
 
   flyway:
     enabled: false
-    locations: classpath:db/migration
-    baseline-on-migrate: false
-    out-of-order: false
 
+  # Mail queda configurado pero NO rompe health
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:noreply@turnow.com}
+    username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
@@ -58,24 +56,28 @@ app:
     refresh-expiration: ${JWT_REFRESH:604800000}
 
   cors:
+    # 🔥 preparado para futuro frontend deployado
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
 
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
 
 management:
-  server:
-    base-path: /
   endpoints:
     web:
       exposure:
         include: health
+
   endpoint:
     health:
       show-details: never
+
+  # 🔥 CLAVE: evita que mail rompa el health en prod
+  health:
+    mail:
+      enabled: false
 
 logging:
   level:
     root: WARN
     com.turnow: INFO
     org.springframework.security: ERROR
-    org.hibernate.SQL: WARN

@@ -26,7 +26,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${HIBERNATE_DDL_AUTO:update}
-    show-sql: false
+    show-sql: true   # 🔥 activado para debug
     properties:
       hibernate:
         format_sql: true
@@ -78,4 +78,5 @@ logging:
   level:
     root: INFO
     com.turnow: DEBUG
-    org.springframework.boot.context.config: DEBUG
+    org.hibernate.SQL: DEBUG              # 🔥 ver queries
+    org.hibernate.type.descriptor.sql: TRACE  # 🔥 ver parámetros
