@@ -1,39 +1,9 @@
-interface AppConfig {
-  apiUrl: string;
-  landingUrl: string;
-}
-
-let API_BASE = 'http://localhost:8080/api';
-
-// Load config from public/config.json at runtime based on domain
-async function loadConfig() {
-  const hostname = window.location.hostname;
-  
-  // In localhost, use the default API_BASE (http://localhost:8080/api)
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    console.log('Using localhost API:', API_BASE);
-    return;
-  }
-  
-  // In Netlify dev, use config.development.json - detect by hostname starting with 'dev-' or containing 'dev'
-  const isDev = hostname.startsWith('dev-') || hostname.includes('-dev');
-  const configFile = isDev ? '/config.development.json' : '/config.json';
-  
-  try {
-    const res = await fetch(configFile);
-    const cfg: AppConfig = await res.json();
-    API_BASE = cfg.apiUrl;
-    console.log(`Loaded API from ${configFile}:`, API_BASE);
-  } catch (err) {
-    console.warn(`Failed to load ${configFile}:`, err);
-  }
-}
-
-// Load config immediately
-loadConfig();
+import { getApiBaseUrl } from './runtimeConfig';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const apiBase = await getApiBaseUrl();
+
+  const res = await fetch(`${apiBase}${path}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(init?.headers || {}),

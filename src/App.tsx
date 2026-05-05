@@ -5,43 +5,23 @@ import LoginPage from './pages/LoginPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import TenantAdminDashboard from './pages/TenantAdminDashboard';
 import PublicBooking from './pages/PublicBooking';
+import { getRuntimeConfig, type AppConfig } from './lib/runtimeConfig';
 
 type Page = 'landing' | 'login' | 'dashboard' | 'booking';
 
-interface AppConfig {
-  landingUrl: string;
-  apiUrl: string;
-}
-
 function AppRouter() {
   const [page, setPage] = useState<Page>('landing');
-  const [config, setConfig] = useState<AppConfig>({
-    landingUrl: 'http://localhost:3000',
-    apiUrl: 'http://localhost:8080/api',
-  });
+  const [config, setConfig] = useState<AppConfig | null>(null);
   const { user, isAuthenticated } = useAuth();
   const hasProcessedQueryParams = useRef(false);
 
   const navigate = (p: string) => setPage(p as Page);
 
-  // Load config from public/config.json at runtime based on domain
+  // Load runtime config from a single source to keep API and redirects aligned.
   useEffect(() => {
-    const hostname = window.location.hostname;
-    
-    // In localhost, use the default config (already set in state)
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      console.log('Using localhost config');
-      return;
-    }
-    
-    // In Netlify dev, use config.development.json - detect by hostname starting with 'dev-' or containing 'dev'
-    const isDev = hostname.startsWith('dev-') || hostname.includes('-dev');
-    const configFile = isDev ? '/config.development.json' : '/config.json';
-    
-    fetch(configFile)
-      .then(r => r.json())
-      .then(cfg => setConfig(cfg))
-      .catch(err => console.warn(`Failed to load ${configFile}:`, err));
+    getRuntimeConfig()
+      .then(setConfig)
+      .catch(err => console.warn('Failed to load runtime config:', err));
   }, []);
 
   // Process query parameters on mount
@@ -69,10 +49,10 @@ function AppRouter() {
   // Redirect to landing when page is 'landing' (and no query params were present initially)
   useEffect(() => {
     // Only redirect if we didn't process any query params initially
-    if (page === 'landing' && !hasProcessedQueryParams.current) {
+    if (config && page === 'landing' && !hasProcessedQueryParams.current) {
       window.location.href = config.landingUrl;
     }
-  }, [page, config.landingUrl]);
+  }, [page, config]);
 
   // Auto-redirect on login
   useEffect(() => {
