@@ -8,6 +8,7 @@ primary_region = "gru"
   LOGGING_LEVEL_ROOT = "INFO"
   PORT = "8080"
   SPRING_PROFILES_ACTIVE = "dev"
+  APP_SEED_ENABLED = "false"
 
 [http_service]
   internal_port = 8080

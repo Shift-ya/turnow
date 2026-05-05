@@ -22,6 +22,9 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
       connection-test-query: "SELECT 1"
+      data-source-properties:
+        prepareThreshold: 0
+        preferQueryMode: simple
 
   jpa:
     hibernate:
@@ -48,6 +51,9 @@ spring:
             enable: true
 
 app:
+  seed:
+    enabled: ${APP_SEED_ENABLED:true}
+
   jwt:
     secret: ${JWT_SECRET}
     expiration: ${JWT_EXPIRATION:86400000}
