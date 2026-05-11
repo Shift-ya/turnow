@@ -6,14 +6,12 @@ import type {
   TenantAdminProfessionalFormData,
   TenantAdminServiceFormData,
   TenantAdminTenantFormData,
-  TenantAdminTab,
 } from '../types/tenantAdminDashboard';
 import { tenantAdminRepository } from '../repositories/tenantAdminRepository';
 import type { ApiAppointment, ApiProfessional, ApiService, ApiTenantOverview } from '../lib/api';
 
 export function useTenantAdminDashboard(tenantId: string | undefined | null) {
   const { success, error: showError, warning } = useToast();
-  const [activeTab, setActiveTab] = useState<TenantAdminTab>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -306,8 +304,6 @@ export function useTenantAdminDashboard(tenantId: string | undefined | null) {
   );
 
   return {
-    activeTab,
-    setActiveTab,
     sidebarOpen,
     setSidebarOpen,
     loading,

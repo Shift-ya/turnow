@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useToast } from './useToast';
-import type { SuperAdminDashboardData, SuperAdminTab, SuperAdminTenantFormData } from '../types/superAdminDashboard';
+import type { SuperAdminDashboardData, SuperAdminTenantFormData } from '../types/superAdminDashboard';
 import type { ApiTenant } from '../lib/api';
 import { superAdminRepository } from '../repositories/superAdminRepository';
 
 export function useSuperAdminDashboard() {
   const { success, error: showError } = useToast();
-  const [activeTab, setActiveTab] = useState<SuperAdminTab>('overview');
   const [search, setSearch] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -128,8 +127,6 @@ export function useSuperAdminDashboard() {
   );
 
   return {
-    activeTab,
-    setActiveTab,
     search,
     setSearch,
     sidebarOpen,
