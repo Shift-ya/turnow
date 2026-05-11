@@ -68,6 +68,7 @@ public class PublicBookingController {
                 s.getName(),
                 s.getDescription(),
                 s.getDurationMinutes(),
+                tenant.getBusinessName(),
                 s.getPrice() == null ? 0 : s.getPrice().doubleValue(),
                 "ARS",
                 s.getActive(),
@@ -95,6 +96,7 @@ public class PublicBookingController {
                     p.getFullName(),
                     p.getEmail(),
                     p.getPhone(),
+                    tenant.getBusinessName(),
                     p.getBio(),
                     p.getActive()
                 ))
@@ -160,6 +162,7 @@ public class PublicBookingController {
         String name,
         String description,
         int duration,
+        String tenantName,
         double price,
         String currency,
         boolean active,
@@ -172,6 +175,7 @@ public class PublicBookingController {
         String name,
         String email,
         String phone,
+        String tenantName,
         String speciality,
         boolean active
     ) {}

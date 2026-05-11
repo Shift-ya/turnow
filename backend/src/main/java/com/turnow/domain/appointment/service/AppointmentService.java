@@ -9,6 +9,8 @@ import com.turnow.domain.professional.entity.Professional;
 import com.turnow.domain.professional.repository.ProfessionalRepository;
 import com.turnow.domain.service.entity.Service;
 import com.turnow.domain.service.repository.ServiceRepository;
+import com.turnow.domain.tenant.entity.Tenant;
+import com.turnow.domain.tenant.repository.TenantRepository;
 import com.turnow.domain.tenant.entity.TenantSettings;
 import com.turnow.domain.tenant.repository.TenantSettingsRepository;
 import com.turnow.infrastructure.exception.BusinessException;
@@ -38,6 +40,7 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final ProfessionalRepository professionalRepository;
     private final ServiceRepository serviceRepository;
+    private final TenantRepository tenantRepository;
     private final TenantSettingsRepository tenantSettingsRepository;
     private final NotificationService notificationService;
 
@@ -46,6 +49,8 @@ public class AppointmentService {
      */
     @Transactional
     public AppointmentResponse createAppointment(UUID tenantId, CreateAppointmentRequest req) {
+        Tenant tenant = tenantRepository.findById(tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Tenant no encontrado"));
 
         // 1. Validar que el profesional pertenece al tenant
         Professional professional = professionalRepository
@@ -94,7 +99,7 @@ public class AppointmentService {
 
         // 6. Crear el turno
         Appointment appointment = Appointment.builder()
-            .tenantId(tenantId)
+            .tenant(tenant)
             .professionalId(req.professionalId())
             .serviceId(req.serviceId())
             .appointmentDate(req.appointmentDate())
@@ -223,7 +228,7 @@ public class AppointmentService {
 
     private AppointmentResponse mapToResponse(Appointment a, String professionalName, String serviceName) {
         return new AppointmentResponse(
-            a.getId(), a.getTenantId(), a.getProfessionalId(), professionalName,
+            a.getId(), a.getTenantId(), a.getTenant() == null ? null : a.getTenant().getBusinessName(), a.getProfessionalId(), professionalName,
             a.getServiceId(), serviceName, a.getClientName(), a.getClientEmail(),
             a.getClientPhone(), a.getAppointmentDate(), a.getStartTime(), a.getEndTime(),
             a.getStatus(), a.getClientNotes(), a.getInternalNotes(),

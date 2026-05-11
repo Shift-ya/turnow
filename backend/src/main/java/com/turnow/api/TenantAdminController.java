@@ -70,7 +70,7 @@ public class TenantAdminController {
                 int cmp = b.getAppointmentDate().compareTo(a.getAppointmentDate());
                 return cmp != 0 ? cmp : b.getStartTime().compareTo(a.getStartTime());
             })
-            .map(this::toAppointmentDto)
+            .map(a -> toAppointmentDto(a, tenant))
             .toList();
 
         // Get TenantSettings for primaryColor
@@ -91,8 +91,8 @@ public class TenantAdminController {
                     0
                 ),
                 appointments,
-                professionalRepository.findByTenantId(tenantId).stream().map(this::toProfessionalDto).toList(),
-                serviceRepository.findAll().stream().filter(s -> s.getTenantId().equals(tenantId)).map(this::toServiceDto).toList()
+                professionalRepository.findByTenantId(tenantId).stream().map(p -> toProfessionalDto(p, tenant)).toList(),
+                serviceRepository.findByTenantId(tenantId).stream().map(s -> toServiceDto(s, tenant)).toList()
             )
         );
     }
@@ -108,6 +108,7 @@ public class TenantAdminController {
         @RequestParam(required = false) Appointment.AppointmentStatus status
     ) {
         requireTenantAccess(currentUser, tenantId);
+        Tenant tenant = getTenant(tenantId);
         Specification<Appointment> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("tenantId"), tenantId));
@@ -145,20 +146,22 @@ public class TenantAdminController {
             Sort.by(Sort.Order.asc("appointmentDate"), Sort.Order.asc("startTime"))
         );
 
-        return ResponseEntity.ok(appointments.stream().map(this::toAppointmentDto).toList());
+        return ResponseEntity.ok(appointments.stream().map(a -> toAppointmentDto(a, tenant)).toList());
     }
 
     @GetMapping("/{tenantId}/professionals")
     public ResponseEntity<List<ProfessionalDto>> getProfessionals(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId) {
         requireTenantAccess(currentUser, tenantId);
-        return ResponseEntity.ok(professionalRepository.findByTenantId(tenantId).stream().map(this::toProfessionalDto).toList());
+        Tenant tenant = getTenant(tenantId);
+        return ResponseEntity.ok(professionalRepository.findByTenantId(tenantId).stream().map(p -> toProfessionalDto(p, tenant)).toList());
     }
 
     @PostMapping("/{tenantId}/professionals")
     public ResponseEntity<ProfessionalDto> createProfessional(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId, @RequestBody ProfessionalUpsertRequest request) {
         requireTenantAccess(currentUser, tenantId);
+        Tenant tenant = getTenant(tenantId);
         Professional professional = Professional.builder()
-            .tenantId(tenantId)
+            .tenant(tenant)
             .firstName(request.firstName())
             .lastName(request.lastName())
             .email(request.email())
@@ -166,7 +169,7 @@ public class TenantAdminController {
             .bio(request.speciality())
             .active(true)
             .build();
-        return ResponseEntity.ok(toProfessionalDto(professionalRepository.save(professional)));
+        return ResponseEntity.ok(toProfessionalDto(professionalRepository.save(professional), tenant));
     }
 
     @PutMapping("/{tenantId}/professionals/{professionalId}")
@@ -177,6 +180,7 @@ public class TenantAdminController {
         @RequestBody ProfessionalUpsertRequest request
     ) {
         requireTenantAccess(currentUser, tenantId);
+        Tenant tenant = getTenant(tenantId);
         Professional professional = professionalRepository.findByIdAndTenantId(professionalId, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Profesional no encontrado"));
         professional.setFirstName(request.firstName());
@@ -185,7 +189,7 @@ public class TenantAdminController {
         professional.setPhone(request.phone());
         professional.setBio(request.speciality());
         professional.setActive(request.active());
-        return ResponseEntity.ok(toProfessionalDto(professionalRepository.save(professional)));
+        return ResponseEntity.ok(toProfessionalDto(professionalRepository.save(professional), tenant));
     }
 
     @DeleteMapping("/{tenantId}/professionals/{professionalId}")
@@ -201,21 +205,23 @@ public class TenantAdminController {
     @GetMapping("/{tenantId}/services")
     public ResponseEntity<List<ServiceDto>> getServices(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId) {
         requireTenantAccess(currentUser, tenantId);
-        return ResponseEntity.ok(serviceRepository.findAll().stream().filter(s -> s.getTenantId().equals(tenantId)).map(this::toServiceDto).toList());
+        Tenant tenant = getTenant(tenantId);
+        return ResponseEntity.ok(serviceRepository.findByTenantId(tenantId).stream().map(s -> toServiceDto(s, tenant)).toList());
     }
 
     @PostMapping("/{tenantId}/services")
     public ResponseEntity<ServiceDto> createService(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId, @RequestBody ServiceUpsertRequest request) {
         requireTenantAccess(currentUser, tenantId);
+        Tenant tenant = getTenant(tenantId);
         Service service = Service.builder()
-            .tenantId(tenantId)
+            .tenant(tenant)
             .name(request.name())
             .description(request.description())
             .durationMinutes(request.duration())
             .price(BigDecimal.valueOf(request.price()))
             .active(true)
             .build();
-        return ResponseEntity.ok(toServiceDto(serviceRepository.save(service)));
+        return ResponseEntity.ok(toServiceDto(serviceRepository.save(service), tenant));
     }
 
     @PutMapping("/{tenantId}/services/{serviceId}")
@@ -226,6 +232,7 @@ public class TenantAdminController {
         @RequestBody ServiceUpsertRequest request
     ) {
         requireTenantAccess(currentUser, tenantId);
+        Tenant tenant = getTenant(tenantId);
         Service service = serviceRepository.findByIdAndTenantId(serviceId, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado"));
         service.setName(request.name());
@@ -233,7 +240,7 @@ public class TenantAdminController {
         service.setDurationMinutes(request.duration());
         service.setPrice(BigDecimal.valueOf(request.price()));
         service.setActive(request.active());
-        return ResponseEntity.ok(toServiceDto(serviceRepository.save(service)));
+        return ResponseEntity.ok(toServiceDto(serviceRepository.save(service), tenant));
     }
 
     @DeleteMapping("/{tenantId}/services/{serviceId}")
@@ -295,10 +302,11 @@ public class TenantAdminController {
         return Math.round(((double) value * 10000.0) / total) / 100.0;
     }
 
-    private AppointmentDto toAppointmentDto(Appointment a) {
+    private AppointmentDto toAppointmentDto(Appointment a, Tenant tenant) {
         return new AppointmentDto(
             a.getId().toString(),
             a.getTenantId().toString(),
+            tenant.getBusinessName(),
             a.getServiceId().toString(),
             a.getProfessionalId().toString(),
             a.getClientName(),
@@ -313,10 +321,11 @@ public class TenantAdminController {
         );
     }
 
-    private ProfessionalDto toProfessionalDto(Professional p) {
+    private ProfessionalDto toProfessionalDto(Professional p, Tenant tenant) {
         return new ProfessionalDto(
             p.getId().toString(),
             p.getTenantId().toString(),
+            tenant.getBusinessName(),
             p.getFullName(),
             p.getEmail(),
             p.getPhone(),
@@ -325,10 +334,11 @@ public class TenantAdminController {
         );
     }
 
-    private ServiceDto toServiceDto(Service s) {
+    private ServiceDto toServiceDto(Service s, Tenant tenant) {
         return new ServiceDto(
             s.getId().toString(),
             s.getTenantId().toString(),
+            tenant.getBusinessName(),
             s.getName(),
             s.getDescription(),
             s.getDurationMinutes(),
@@ -387,6 +397,7 @@ public class TenantAdminController {
     public record AppointmentDto(
         String id,
         String tenantId,
+        String tenantName,
         String serviceId,
         String professionalId,
         String clientName,
@@ -403,6 +414,7 @@ public class TenantAdminController {
     public record ProfessionalDto(
         String id,
         String tenantId,
+        String tenantName,
         String name,
         String email,
         String phone,
@@ -413,6 +425,7 @@ public class TenantAdminController {
     public record ServiceDto(
         String id,
         String tenantId,
+        String tenantName,
         String name,
         String description,
         int duration,

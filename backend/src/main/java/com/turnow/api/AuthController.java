@@ -2,6 +2,7 @@ package com.turnow.api;
 
 import com.turnow.domain.auth.dto.LoginRequest;
 import com.turnow.domain.auth.dto.AuthResponse;
+import com.turnow.domain.tenant.repository.TenantRepository;
 import com.turnow.domain.user.entity.User;
 import com.turnow.domain.user.repository.UserRepository;
 import com.turnow.infrastructure.exception.BusinessException;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 public class AuthController {
 
     private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
@@ -39,9 +41,12 @@ public class AuthController {
         String token = jwtTokenProvider.generateToken(user);
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
+        String tenantName = user.getTenantId() == null ? null : tenantRepository.findById(user.getTenantId())
+            .map(t -> t.getBusinessName())
+            .orElse(null);
 
         // 1 hour = 3600000 ms
-        return ResponseEntity.ok(AuthResponse.of(token, 3600000L, user));
+        return ResponseEntity.ok(AuthResponse.of(token, 3600000L, user, tenantName));
     }
 
     @PostMapping("/refresh")
@@ -65,8 +70,11 @@ public class AuthController {
         }
 
         String newToken = jwtTokenProvider.generateToken(user);
+        String tenantName = user.getTenantId() == null ? null : tenantRepository.findById(user.getTenantId())
+            .map(t -> t.getBusinessName())
+            .orElse(null);
         // 1 hour = 3600000 ms
-        return ResponseEntity.ok(AuthResponse.of(newToken, 3600000L, user));
+        return ResponseEntity.ok(AuthResponse.of(newToken, 3600000L, user, tenantName));
     }
 
     private boolean isPasswordValid(String rawPassword, String storedPassword) {

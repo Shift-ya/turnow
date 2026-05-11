@@ -10,6 +10,7 @@ import java.util.UUID;
 public record AppointmentResponse(
     UUID id,
     UUID tenantId,
+    String tenantName,
     UUID professionalId,
     String professionalName,
     UUID serviceId,

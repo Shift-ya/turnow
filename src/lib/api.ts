@@ -118,8 +118,11 @@ export interface ApiLoginResponse {
   expiresIn: number;
   userId: string;
   tenantId: string | null;
+  tenantName?: string | null;
   email: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   role: 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'STAFF' | 'CLIENT';
 }
 
@@ -139,6 +142,7 @@ export interface ApiTenant {
 export interface ApiProfessional {
   id: string;
   tenantId: string;
+  tenantName?: string;
   name: string;
   email: string;
   phone: string;
@@ -149,6 +153,7 @@ export interface ApiProfessional {
 export interface ApiService {
   id: string;
   tenantId: string;
+  tenantName?: string;
   name: string;
   description: string;
   duration: number;
@@ -161,6 +166,7 @@ export interface ApiService {
 export interface ApiAppointment {
   id: string;
   tenantId: string;
+  tenantName?: string;
   serviceId: string;
   professionalId: string;
   clientName: string;
