@@ -1,7 +1,7 @@
 # 📊 Análisis Completo: turnow
 
-**Fecha de análisis:** 5 de Mayo, 2026  
-**Estado del proyecto:** En desarrollo (JWT implementado, routing finalizado)
+**Fecha de análisis:** 11 de Mayo, 2026  
+**Estado del proyecto:** En desarrollo avanzado (JWT, refresh, multi-tenant y routing funcionales)
 
 ---
 
@@ -21,8 +21,9 @@ Frontend (React 19.2.3 + TypeScript + Vite)    ↔    Backend (Spring Boot + Jav
 #### 1️⃣ **Autenticación** (`/auth`)
 - ✅ `POST /auth/login` - Login con email/password + JWT
   - Request: `{ email, password }`
-  - Response: `{ accessToken, tokenType, expiresIn, userId, tenantId, email, fullName, role }`
-  - JWT firmado con HS256, válido por 24h
+  - Response: `{ accessToken, tokenType, expiresIn, userId, tenantId, tenantName, email, fullName, firstName, lastName, role }`
+  - JWT firmado con HS256, con expiración de 1h en la respuesta actual
+  - `POST /auth/refresh` - Renueva el token mientras siga siendo válido
   - Roles: SUPER_ADMIN, TENANT_ADMIN, STAFF, CLIENT
   - Password encoding: BCrypt con fallback a plaintext
 
@@ -61,6 +62,12 @@ Frontend (React 19.2.3 + TypeScript + Vite)    ↔    Backend (Spring Boot + Jav
 - **SlotCalculatorService** - Calcula horarios disponibles
 - **AppointmentService** - Gestiona citas
 - **TenantSettingsRepository** - Configuración por tenant (colores, etc)
+
+### 🗄️ MODELO MULTI-TENANT ACTUAL
+- ✅ `User`, `Professional`, `Service` y `Appointment` están vinculados a `Tenant` con `@ManyToOne`
+- ✅ Las entidades exponen `tenantId` de solo lectura para consultas y DTOs
+- ✅ Migraciones Flyway `V2` y `V3` agregaron las claves foráneas necesarias
+- ✅ `SUPER_ADMIN` es el único rol que puede existir sin `tenant_id`
 
 ### 🔒 SEGURIDAD
 - ✅ **JWT implementado** - HS256 firmado, claims: userId, tenantId, role, email (sub)
@@ -115,33 +122,16 @@ Frontend (React 19.2.3 + TypeScript + Vite)    ↔    Backend (Spring Boot + Jav
 - ✅ Interfaz responsiva
 
 ### 🔌 API CLIENT (`src/lib/api.ts`)
-
-```typescript
-Métodos disponibles:
-- login()
-- superOverview()
-- listTenants()
-- createTenant()
-- updateTenantStatus()
-- deleteTenant()
-- tenantOverview()
-- listTenantAppointments()
-- listTenantProfessionals()
-- createTenantProfessional()
-- updateTenantProfessional()
-- deleteTenantProfessional()
-- getPublicTenant()
-- getPublicServices()
-- getPublicProfessionals()
-- getPublicSlots()
-- createPublicAppointment()
-```
+- Cliente centralizado con `request()` y refresh automático cuando recibe `401`.
+- Guarda el token en `localStorage['turnow_token']` y reintenta la request con el token nuevo si el refresh funciona.
+- La lógica de dominio está separada en repositorios: `authRepository`, `superAdminRepository`, `tenantAdminRepository` y `publicBookingRepository`.
 
 ### 🎭 CONTEXTO DE AUTENTICACIÓN
 - ✅ **AuthContext** - Maneja user + token binding
 - ✅ **JWT persistence** - Token almacenado en localStorage['turnow_token']
-- ✅ **Session hydration** - Lee token + user al cargar la página
+- ✅ **Session hydration** - Lee token + user al cargar la página y reconstruye el usuario desde el JWT
 - ✅ **Token propagation** - Bearer token enviado en Authorization header
+- ✅ **Token refresh** - El cliente renueva el access token contra `POST /auth/refresh` si el backend responde `401`
 - ✅ **isAuthenticated** - Requiere user + token (no solo uno)
 - ✅ **isReady** - Previene redirects prematuros durante hydration
 
@@ -153,6 +143,8 @@ Métodos disponibles:
 - ✅ EditServiceDialog - Modal para editar servicios
 - ✅ CreateProfessionalDialog - Modal para crear profesionales
 - ✅ CreateServiceDialog - Modal para crear servicios
+- ✅ EditTenantDialog - Modal para editar datos del tenant
+- ✅ EditTenantColorDialog - Modal para editar colores/branding del tenant
 - ✅ Toast system - Notificaciones con sonner + framer-motion
 
 ---
@@ -163,17 +155,17 @@ Métodos disponibles:
 
 **Archivo:** `src/lib/runtimeConfig.ts`
 - ✅ Detección automática de ambiente por hostname
-- ✅ Carga dinámica de configuración desde `/config.json` o `/config.development.json`
-- ✅ Endpoints configurables por ambiente
+- ✅ El frontend local usa `http://localhost:8080/api`
+- ✅ Los entornos no locales cargan `/config.development.json` o `/config.json`
 
-**Ambientes:**
-- **Local** → API: `https://apidev-turnow.shiftya.online/api` (forces dev mode)
+**Ambientes actuales:**
+- **Local** → API: `http://localhost:8080/api`
 - **Dev** → API: `https://apidev-turnow.shiftya.online/api`
 - **Prod** → API: `https://api-turnow.shiftya.online/api`
 
 **Archivos de config:**
-- `public/config.development.json` - Dev (incluido en git)
-- `public/config.json` - Prod (actualizar en deployment)
+- `public/config.development.json` - Dev remoto
+- `public/config.json` - Prod remoto
 
 ---
 
@@ -210,6 +202,11 @@ Métodos disponibles:
 - SUPER_ADMIN → SuperAdminDashboard
 - TENANT_ADMIN → TenantAdminDashboard
 
+### 📌 UI DE DASHBOARDS ACTUAL
+- `TenantAdminDashboard` usa una sidebar + contenido desacoplado con tabs para dashboard, calendario, profesionales, servicios y configuración.
+- `SuperAdminDashboard` usa una sidebar + contenido desacoplado con tabs para overview, tenants y plans.
+- `BaseFormDialog` ya está corregido para evitar el nested button bug con `DialogTrigger asChild`.
+
 ---
 
 ## 🔴 GAPS Y FUNCIONALIDADES FALTANTES
@@ -217,19 +214,18 @@ Métodos disponibles:
 ### BACKEND
 | Funcionalidad | Estado | Prioridad | Notas |
 |---|---|---|---|
-| **Refresh token** | ❌ Sin implementar | 🔴 CRÍTICA | Endpoint separado para renovar token |
 | **Logout endpoint** | ❌ Sin implementar | 🟡 MEDIA | Blacklist de tokens (opcional, solo client-side por ahora) |
 | **Notificaciones por email** | ❌ Sin implementar | 🟡 MEDIA | Reminders y confirmaciones de cita |
-| **Disponibilidad (Availability)** | ✅ Parcial | 🟡 MEDIA | SlotCalculator existe pero incompleto |
+| **Disponibilidad (Availability)** | ✅ Parcial | 🟡 MEDIA | SlotCalculator existe, pero todavía puede crecer |
 | **Cancelación de citas** | ⚠️ Existe por token | 🟢 BAJA | Pero falta validación adicional |
 | **Validación de datos** | ⚠️ Básica | 🟡 MEDIA | Agregar más @Valid decorators |
 
 ### FRONTEND
 | Funcionalidad | Estado | Prioridad | Notas |
 |---|---|---|---|
-| **Refresh token automático** | ❌ No implementado | 🔴 CRÍTICA | Renovar JWT antes de expirar |
-| **Error handling 401/403** | ⚠️ Parcial | 🟡 MEDIA | Redirigir a login si token inválido |
-| **Editar tenant (admin)** | ❌ Sin UI | 🟡 MEDIA | Está en backend, falta frontend |
+| **Refresh token automático** | ✅ Implementado | 🟢 BAJA | El cliente reintenta con `POST /auth/refresh` |
+| **Error handling 401/403** | ✅ Parcialmente resuelto | 🟡 MEDIA | 401 dispara refresh; si falla, vuelve a login |
+| **Editar tenant (admin)** | ✅ Implementado | 🟢 BAJA | Dialogs y acciones integradas en el dashboard |
 | **Filtros avanzados** | ❌ Sin implementar | 🟢 BAJA | Por fecha, estado, etc |
 | **Exportar datos** | ❌ Sin implementar | 🟢 BAJA | CSV, PDF |
 | **Responsive design mobile** | ⚠️ Parcial | 🟢 BAJA | Sidebar existe pero mejorable |
@@ -342,8 +338,8 @@ framer-motion                   # Animaciones suaves
 ### Backend Stack
 - **Framework:** Spring Boot 3.x
 - **Lenguaje:** Java 21+
-- **BD:** (No especificada en análisis, asumo JPA/Hibernate)
-- **Seguridad:** Spring Security (sin JWT configurado)
+- **BD:** PostgreSQL con JPA/Hibernate y Flyway
+- **Seguridad:** Spring Security + JWT + refresh token endpoint
 
 ### Frontend Stack
 - **Framework:** React 19.2.3
@@ -353,15 +349,10 @@ framer-motion                   # Animaciones suaves
 - **Estilos:** Tailwind CSS (inferido por el código)
 
 ### Estado actual
-- ✅ **Core funcionando:** 70%
-  - Login/Dashboard basico
-  - CRUD de profesionales/servicios
-  - Booking público de 3 pasos
-- ❌ **Falta:** 30%
-  - JWT/Autenticación robusta
-  - Notificaciones
-  - Modales de edición
-  - Validaciones completas
+- ✅ **Core funcional:** login, dashboards, booking público y CRUD multi-tenant están implementados
+- ✅ **Autenticación:** JWT + refresh token + hydration de sesión en frontend
+- ✅ **UI:** dialogs reutilizables, toasts y layouts separados por rol
+- ⚠️ **Pendiente:** notificaciones, logout server-side, más validaciones y pulido responsive
 
 ---
 
@@ -377,25 +368,26 @@ framer-motion                   # Animaciones suaves
 - ✅ Bearer token propagation en API client
 
 ### 🔧 Fase 2: Runtime Config & Deployment (COMPLETADA)
-- ✅ Runtime config para dev/prod con detección de hostname
+- ✅ Runtime config para local/dev/prod con detección de hostname
 - ✅ Config files (`config.json`, `config.development.json`)
-- ✅ API endpoints configurables por ambiente
-- ✅ Backend compilado con JWT implementation
+- ✅ API local apuntando a `http://localhost:8080/api`
+- ✅ Backend con JWT + refresh token implementados
 
 ### 🎨 Fase 3: UI/UX Polish (EN PROGRESO)
 - ✅ BaseFormDialog component (reutilizable)
 - ✅ CRUD Dialogs: Create/Edit para Profesionales y Servicios
+- ✅ Dialogs para edición del tenant y su branding
 - ✅ Toast notification system (sonner + framer-motion)
 - ✅ Loading states + error handling
 - ✅ Integración en TenantAdminDashboard
 - ⏳ Responsive design mobile (pending minor tweaks)
-- ⏳ Refresh token automation (priority: CRITICAL)
+- ⏳ Logout server-side y notificaciones por email
 
 ### 🔴 Fase 4: Funcionalidades Críticas (PENDING)
-1. **Refresh token endpoint** - Renovar JWT antes de expirar
-2. **Error handling 401/403** - Redirigir a login si token inválido
-3. **Email notifications** - Confirmaciones y reminders de citas
-4. **Logout proper** - Limpiar token + blacklist (opcional)
+1. **Email notifications** - Confirmaciones y reminders de citas
+2. **Logout proper** - Limpiar token + blacklist (opcional)
+3. **Mejoras de disponibilidad** - SlotCalculator y validaciones de agenda
+4. **Más validaciones y filtros** - UX y control de datos
 
 ### 🟡 Fase 5: Polish & Testing (PENDING)
 1. Unit tests para AuthContext
@@ -407,49 +399,43 @@ framer-motion                   # Animaciones suaves
 
 ## 📅 ESTADO ACTUAL
 
-**MVP (mínimo viable):** 🟢 **80% COMPLETADO**
-- ✅ JWT implementado y funcionando (backend)
-- ✅ CRUD completo (C, R, U, D) en UI
-- ✅ React Router con guards
-- ✅ Runtime config dev/prod
-- ⏳ **BLOCKER**: Backend en Fly.io no tiene código actualizado (token falta en response)
-- ⚠️ Refresh token no implementado
+**MVP (mínimo viable):** 🟢 **Funcional**
+- ✅ JWT, refresh token y session hydration
+- ✅ CRUD completo multi-tenant para profesionales, servicios y tenant settings
+- ✅ React Router con guards y dashboards por rol
+- ✅ Runtime config local/dev/prod
+- ⚠️ Quedan mejoras de producto y hardening
 
-**Beta completo:** 🟡 **Estimado 3-5 días más**
-- Desplegar backend actualizado a Fly.io
-- Implementar refresh token
-- Tests E2E
+**Beta completo:** 🟡 **Cerca de completarse**
+- Notificaciones por email
+- Logout server-side
+- Más tests E2E y de integración
 
-**Release v1.0:** 🔴 **Estimado 1-2 semanas más**
-- Email notifications
-- Polish completo
-- Production hardening
+**Release v1.0:** 🔴 **Pendiente de pulido final**
+- Observabilidad y métricas
+- Hardening de validaciones
+- Mejoras responsive y UX
 
 ---
 
 ## 🎯 PRÓXIMOS PASOS INMEDIATOS
 
-### 🔴 BLOCKER CRÍTICO (AHORA)
-1. **Redeploy backend a Fly.io** con código JWT actualizado
-   - El servidor remoto NO tiene el AuthResponse con token
-   - Compilar y desplegar el JAR actualizado
-   - Verificar login response incluye `accessToken`
+### 🟡 SINCRONIZACIÓN DE ENTORNOS
+1. **Redeploy remoto si hace falta**
+  - El código local ya tiene JWT, refresh y tenantName en el login
+  - Si el backend remoto sigue desactualizado, hay que publicar el build nuevo
 
-### 🟡 POST-DEPLOYMENT
-2. **Implementar refresh token endpoint** en backend
-   - `POST /auth/refresh` - Renovar JWT si aún es válido
-   - Actualizar frontend para renovar automáticamente
+### 🔧 PENDIENTES REALES
+2. **Email notifications**
+  - Confirmaciones y reminders de cita
 
-3. **Error handling 401/403** en frontend
-   - Interceptar en api.ts
-   - Redirigir a /login si 401
-   - Mostrar error amigable si 403
+3. **Logout server-side**
+  - Limpiar token en cliente y, si se quiere endurecer, agregar blacklist
 
-4. **Validar E2E login flow**
-   - Login → recibe token + user
-   - Token guardado en localStorage
-   - Dashboard protegido accesible
-   - Logout limpia token
+4. **Validar el flujo end-to-end**
+  - Login local → token + user + tenant
+  - Dashboard protegido accesible
+  - Refresh de sesión al expirar el token
 
 ---
 
@@ -457,347 +443,32 @@ framer-motion                   # Animaciones suaves
 
 | Componente | Estado | Bloqueado | Notas |
 |-----------|--------|-----------|-------|
-| **JWT Backend** | ✅ Código OK | ⏳ No deployed | AuthController.java correcto, servidor remoto outdated |
-| **JWT Frontend** | ✅ Almacenaje OK | ⏳ Esperando token | API client listo para Bearer token |
+| **JWT Backend** | ✅ Código OK | ⚠️ Si remoto | AuthController y refresh están en el código actual |
+| **JWT Frontend** | ✅ Almacenaje OK | ❌ No | API client con refresh automático |
 | **React Router** | ✅ Completo | ❌ No | Routes + Guards implementadas |
 | **CRUD UI** | ✅ Completo | ❌ No | Dialogs + Forms working |
 | **Runtime Config** | ✅ Completo | ❌ No | Dev/Prod separation OK |
-| **Refresh Token** | ❌ No start | ⏳ Priority | Necesario para UX fluido |
+| **Refresh Token** | ✅ Implementado | ❌ No | `POST /auth/refresh` ya existe y el cliente lo usa |
 | **Email Notif** | ❌ No start | 🟢 Low priority | Para futuro |
 
 ---
 
 ## 🌐 CONFIGURACIÓN DEV & PROD
 
-### 📁 Archivos de Configuración
+### 📁 Estado real de configuración
+- `backend/src/main/resources/application.yml` es la base común y usa variables de entorno con fallback a localhost.
+- `backend/src/main/resources/application-dev.yml` se usa con `SPRING_PROFILES_ACTIVE=dev` y el script local carga `backend/.env.local`.
+- `backend/src/main/resources/application-prod.yml` mantiene el perfil de producción con validación estricta y Flyway activo.
 
-El proyecto usa 3 perfiles de Spring Boot:
+### Backend local actual
+- `start-backend.ps1` y `start-backend.bat` cargan `backend/.env.local` antes de arrancar.
+- Ese archivo apunta a Supabase con `DATABASE_URL`, `DATABASE_USER` y `DATABASE_PASSWORD`.
+- El backend local corre con perfil `dev` y por eso usa la base de datos remota de Supabase, no una base local de PostgreSQL.
 
-```
-backend/src/main/resources/
-├── application.yml          (LOCAL - hardcoded localhost)
-├── application-dev.yml      (DEV - variables de entorno)
-└── application-prod.yml     (PROD - variables de entorno)
-```
-
-### 1️⃣ LOCAL (`application.yml`)
-
-**Uso:** Desarrollo en máquina local. Sin Docker, sin variables de entorno.
-
-**Contenido:**
-```yaml
-server:
-  port: 8080
-  servlet:
-    context-path: /api
-
-spring:
-  application:
-    name: turnow-backend
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/turnow
-    username: postgres
-    password: QUETEimporta1505
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 60000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        default_schema: public
-
-  flyway:
-    enabled: false
-    locations: classpath:db/migration
-    baseline-on-migrate: true
-    out-of-order: false
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: noreply@turnow.com
-    password: 
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
-app:
-  jwt:
-    secret: turnow_Super_Secret_Key_2024_Change_In_Production_Min_256_bits
-    expiration: 86400000
-    refresh-expiration: 604800000
-
-  cors:
-    allowed-origins: http://localhost:3000,http://localhost:5173
-
-  frontend-url: http://localhost:3000
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-
-logging:
-  level:
-    com.turnow: DEBUG
-    org.springframework.security: INFO
-    org.hibernate.SQL: INFO
-```
-
-**Startup Local:**
-```bash
-cd backend
-java -jar target/turnow-backend-1.0.0-SNAPSHOT.jar
-```
-
----
-
-### 2️⃣ DEV (`application-dev.yml`)
-
-**Uso:** Servidor de desarrollo. Lee credenciales de variables de entorno.
-
-**Características:**
-- Base de datos: Variable `${DATABASE_URL}`
-- Flyway: Habilitado con baseline
-- DDL: validate (no modifica tablas)
-- Logging: INFO (menos verbose que local)
-- Pool: 20 conexiones
-- Endpoints actuator: health, metrics, info, env
-
-**Contenido:**
-```yaml
-server:
-  port: 8080
-  servlet:
-    context-path: /api
-
-spring:
-  application:
-    name: turnow-backend
-
-  datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USER}
-    password: ${DATABASE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 60000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        default_schema: public
-
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: true
-    out-of-order: false
-
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
-app:
-  jwt:
-    secret: ${JWT_SECRET}
-    expiration: ${JWT_EXPIRATION:86400000}
-    refresh-expiration: ${JWT_REFRESH:604800000}
-
-  cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://dev-app.example.com}
-
-  frontend-url: ${FRONTEND_URL:http://dev-app.example.com}
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics,info,env
-
-logging:
-  level:
-    root: INFO
-    com.turnow: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-```
-
-**Startup DEV:**
-```powershell
-# 1. Establecer variables de entorno
-$env:DATABASE_URL = "jdbc:postgresql://dev-db.example.com:5432/turnow_dev"
-$env:DATABASE_USER = "postgres"
-$env:DATABASE_PASSWORD = "dev_password"
-$env:JWT_SECRET = "tu_secret_dev_min_256_bits_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-$env:CORS_ORIGINS = "http://localhost:5173,http://dev-app.example.com"
-$env:FRONTEND_URL = "http://dev-app.example.com"
-$env:MAIL_USERNAME = "tu_email@gmail.com"
-$env:MAIL_PASSWORD = "tu_app_password"
-
-# 2. Compilar
-mvn clean package -DskipTests
-
-# 3. Ejecutar DEV
-java -jar target/turnow-backend-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev
-```
-
----
-
-### 3️⃣ PROD (`application-prod.yml`)
-
-**Uso:** Servidor de producción. Máxima seguridad y rendimiento.
-
-**Características:**
-- Base de datos: Variable `${DATABASE_URL}`
-- Flyway: Habilitado sin baseline (datos ya existentes)
-- DDL: validate (jamás modifica)
-- Logging: WARN (solo errores)
-- Pool: 30 conexiones (más que dev)
-- Endpoints actuator: solo health (seguridad)
-
-**Contenido:**
-```yaml
-server:
-  port: 8080
-  servlet:
-    context-path: /api
-
-spring:
-  application:
-    name: turnow-backend
-
-  datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USER}
-    password: ${DATABASE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 30
-      minimum-idle: 10
-      connection-timeout: 60000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-
-  jpa:
-    show-sql: false
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: false
-        default_schema: public
-
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: false
-    out-of-order: false
-
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
-app:
-  jwt:
-    secret: ${JWT_SECRET}
-    expiration: ${JWT_EXPIRATION:86400000}
-    refresh-expiration: ${JWT_REFRESH:604800000}
-
-  cors:
-    allowed-origins: ${CORS_ORIGINS}
-
-  frontend-url: ${FRONTEND_URL}
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health
-
-logging:
-  level:
-    root: WARN
-    com.turnow: INFO
-    org.springframework.security: ERROR
-    org.hibernate.SQL: WARN
-```
-
-**Startup PROD:**
-```powershell
-# 1. Establecer variables de entorno (en el servidor)
-$env:DATABASE_URL = "jdbc:postgresql://prod-db.example.com:5432/turnow"
-$env:DATABASE_USER = "postgres"
-$env:DATABASE_PASSWORD = "prod_password_strong_xxxxxxx"
-$env:JWT_SECRET = "tu_secret_prod_min_256_bits_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-$env:CORS_ORIGINS = "https://www.turnow.com,https://app.turnow.com"
-$env:FRONTEND_URL = "https://www.turnow.com"
-$env:MAIL_USERNAME = "noreply@turnow.com"
-$env:MAIL_PASSWORD = "tu_app_password"
-
-# 2. Ejecutar PROD
-java -jar target/turnow-backend-1.0.0-SNAPSHOT.jar --spring.profiles.active=prod
-```
-
----
-
-### 📊 Tabla Comparativa
-
-| Setting | Local | Dev | Prod |
-|---------|-------|-----|------|
-| **BD URL** | localhost:5432 | ${DATABASE_URL} | ${DATABASE_URL} |
-| **DDL auto** | update | validate | validate |
-| **Flyway** | disabled | enabled | enabled |
-| **Baseline** | - | true | false |
-| **DB Pool Max** | 20 | 20 | 30 |
-| **DB Pool Min** | 5 | 5 | 10 |
-| **Log Root** | DEBUG | INFO | WARN |
-| **Log App** | DEBUG | DEBUG | INFO |
-| **Endpoints** | all | health,metrics,info,env | health |
-| **Format SQL** | true | true | false |
-| **JWT Secret** | hardcoded | env var | env var |
-| **CORS Origins** | localhost | env var | env var |
+### Frontend local actual
+- `src/lib/runtimeConfig.ts` fuerza `http://localhost:8080/api` cuando el hostname es local.
+- `public/config.development.json` sigue apuntando al entorno dev remoto.
+- `public/config.json` sigue apuntando al entorno prod remoto.
 
 ---
 

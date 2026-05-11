@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +26,9 @@ public class SuperAdminController {
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @GetMapping("/overview")
     public ResponseEntity<GlobalOverviewDto> overview(@AuthenticationPrincipal User currentUser) {
@@ -112,12 +118,34 @@ public class SuperAdminController {
     }
 
     @DeleteMapping("/tenants/{tenantId}")
+    @Transactional
     public ResponseEntity<Void> deleteTenant(@AuthenticationPrincipal User currentUser, @PathVariable UUID tenantId) {
         requireSuperAdmin(currentUser);
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant no encontrado"));
+
+        cleanupTenantData(tenant.getId());
         tenantRepository.delete(tenant);
         return ResponseEntity.noContent().build();
+    }
+
+    private void cleanupTenantData(UUID tenantId) {
+        executeTenantDelete("delete from public.professional_services where professional_id in (select id from public.professionals where tenant_id = :tenantId)", tenantId);
+        executeTenantDelete("delete from public.professional_services where service_id in (select id from public.services where tenant_id = :tenantId)", tenantId);
+        executeTenantDelete("delete from public.notifications where tenant_id = :tenantId", tenantId);
+        executeTenantDelete("delete from public.availability_blocks where tenant_id = :tenantId", tenantId);
+        executeTenantDelete("delete from public.availabilities where tenant_id = :tenantId", tenantId);
+        executeTenantDelete("delete from public.appointments where tenant_id = :tenantId", tenantId);
+        executeTenantDelete("delete from public.professionals where tenant_id = :tenantId", tenantId);
+        executeTenantDelete("delete from public.services where tenant_id = :tenantId", tenantId);
+        executeTenantDelete("delete from public.users where tenant_id = :tenantId", tenantId);
+        executeTenantDelete("delete from public.tenant_settings where tenant_id = :tenantId", tenantId);
+    }
+
+    private void executeTenantDelete(String sql, UUID tenantId) {
+        entityManager.createNativeQuery(sql)
+            .setParameter("tenantId", tenantId)
+            .executeUpdate();
     }
 
     private TenantDto toDto(Tenant tenant) {
