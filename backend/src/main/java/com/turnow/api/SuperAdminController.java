@@ -3,6 +3,8 @@ package com.turnow.api;
 import com.turnow.domain.tenant.entity.Tenant;
 import com.turnow.domain.tenant.repository.TenantRepository;
 import com.turnow.domain.user.entity.User;
+import com.turnow.domain.user.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import com.turnow.infrastructure.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,8 @@ import java.util.UUID;
 public class SuperAdminController {
 
     private final TenantRepository tenantRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/overview")
     public ResponseEntity<GlobalOverviewDto> overview(@AuthenticationPrincipal User currentUser) {
@@ -69,7 +73,33 @@ public class SuperAdminController {
             .plan(Tenant.SubscriptionPlan.valueOf(request.plan()))
             .planExpiresAt(LocalDateTime.now().plusMonths(1))
             .build();
-        return ResponseEntity.ok(toDto(tenantRepository.save(tenant)));
+        Tenant saved = tenantRepository.save(tenant);
+
+        // Crear un usuario TENANT_ADMIN asociado al tenant
+        String firstName = request.firstName() != null ? request.firstName() : "";
+        String lastName = request.lastName() != null ? request.lastName() : "";
+        String phone = request.phone() != null ? request.phone() : "";
+        String digits = phone.replaceAll("\\D", "");
+        String last4 = digits.length() >= 4 ? digits.substring(digits.length() - 4) : (digits.isEmpty() ? "0000" : digits);
+        String base = (firstName + "-" + lastName).trim().toLowerCase().replaceAll("\\s+", "-");
+        if (base.isEmpty()) base = saved.getBusinessName() != null ? saved.getBusinessName().toLowerCase().replaceAll("\\s+", "-") : "user";
+        String rawPassword = base + "-" + last4;
+
+        User user = User.builder()
+            .tenantId(saved.getId())
+            .email(request.email() != null ? request.email().toLowerCase() : null)
+            .passwordHash(passwordEncoder.encode(rawPassword))
+            .firstName(firstName.isEmpty() ? "" : firstName)
+            .lastName(lastName.isEmpty() ? "" : lastName)
+            .phone(phone)
+            .role(User.Role.TENANT_ADMIN)
+            .active(true)
+            .emailVerified(false)
+            .build();
+
+        userRepository.save(user);
+
+        return ResponseEntity.ok(toDto(saved));
     }
 
     @PatchMapping("/tenants/{tenantId}/status")
@@ -129,6 +159,8 @@ public class SuperAdminController {
 
     public record TenantCreateRequest(
         String name,
+        String firstName,
+        String lastName,
         String slug,
         String email,
         String phone,

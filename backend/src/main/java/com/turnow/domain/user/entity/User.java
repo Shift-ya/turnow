@@ -1,5 +1,6 @@
 package com.turnow.domain.user.entity;
 
+import com.turnow.domain.tenant.entity.Tenant;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -44,7 +45,11 @@ public class User implements UserDetails {
      * tenant_id es NULL para SUPER_ADMIN.
      * Es OBLIGATORIO para TENANT_ADMIN, STAFF, CLIENT.
      */
-    @Column(name = "tenant_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", foreignKey = @ForeignKey(name = "fk_users_tenant_id"))
+    private Tenant tenant;
+
+    @Column(name = "tenant_id", insertable = false, updatable = false)
     private UUID tenantId;
 
     @Column(name = "email", nullable = false, unique = true, length = 255)

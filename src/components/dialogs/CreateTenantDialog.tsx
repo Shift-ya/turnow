@@ -2,7 +2,7 @@ import * as React from "react";
 import { BaseFormDialog, type FormField } from "./BaseFormDialog";
 
 interface CreateTenantDialogProps {
-  onSave: (data: { name: string; email: string; phone: string; address: string; slug: string; plan: string }) => Promise<void>;
+  onSave: (data: { name: string; firstName?: string; lastName?: string; email: string; phone: string; address: string; slug: string; plan: string }) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -11,6 +11,20 @@ export const CreateTenantDialog: React.FC<CreateTenantDialogProps> = ({
   isLoading = false,
 }) => {
   const fields: FormField[] = [
+    {
+      id: "firstName",
+      label: "Nombre",
+      type: "text",
+      placeholder: "Nombre",
+      required: true,
+    },
+    {
+      id: "lastName",
+      label: "Apellido",
+      type: "text",
+      placeholder: "Apellido",
+      required: true,
+    },
     {
       id: "name",
       label: "Nombre del negocio",
@@ -58,11 +72,15 @@ export const CreateTenantDialog: React.FC<CreateTenantDialogProps> = ({
   ];
 
   const handleSubmit = async (data: Record<string, string | number>) => {
+    const firstName = (data.firstName as string) || '';
+    const lastName = (data.lastName as string) || '';
     const name = data.name as string;
     const slug = (data.slug as string).trim() || name.toLowerCase().replace(/\s+/g, "-");
 
     await onSave({
       name,
+      firstName,
+      lastName,
       email: data.email as string,
       phone: data.phone as string,
       address: data.address as string,

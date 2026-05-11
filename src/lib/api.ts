@@ -234,7 +234,7 @@ export const api = {
 
   superOverview: () => request<ApiGlobalOverview>('/admin/super/overview'),
   listTenants: (search = '') => request<ApiTenant[]>(`/admin/super/tenants${search ? `?search=${encodeURIComponent(search)}` : ''}`),
-  createTenant: (payload: { name: string; slug: string; email: string; phone: string; address: string; plan: string }) =>
+  createTenant: (payload: { name: string; firstName?: string; lastName?: string; slug: string; email: string; phone: string; address: string; plan: string }) =>
     request<ApiTenant>('/admin/super/tenants', { method: 'POST', body: JSON.stringify(payload) }),
   updateTenantStatus: (tenantId: string, status: string) =>
     request<ApiTenant>(`/admin/super/tenants/${tenantId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),

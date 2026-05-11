@@ -7,6 +7,8 @@ export type SuperAdminNavItem = DashboardNavItem<SuperAdminTab>;
 
 export interface SuperAdminTenantFormData {
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone: string;
   address: string;

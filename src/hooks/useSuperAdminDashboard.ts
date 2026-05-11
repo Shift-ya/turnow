@@ -54,6 +54,8 @@ export function useSuperAdminDashboard() {
       try {
         await superAdminRepository.createTenant({
           name: data.name,
+          firstName: data.firstName,
+          lastName: data.lastName,
           email: data.email,
           phone: data.phone,
           address: data.address,
