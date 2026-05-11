@@ -17,28 +17,36 @@ export function useSuperAdminDashboard() {
   const [metrics, setMetrics] = useState<SuperAdminDashboardData['metrics']>(null);
   const [tenants, setTenants] = useState<SuperAdminDashboardData['tenants']>([]);
 
-  const loadData = useCallback(async () => {
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const { overview, tenants: tenantList } = await superAdminRepository.loadDashboard(search);
+        setMetrics(overview);
+        setTenants(tenantList);
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : 'No se pudieron cargar datos globales';
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadData();
+  }, [search]);
+
+  // Helper to reload data after mutations (without showing error toast to avoid infinite loops)
+  const reloadData = useCallback(async () => {
     try {
-      setLoading(true);
-      setError('');
       const { overview, tenants: tenantList } = await superAdminRepository.loadDashboard(search);
       setMetrics(overview);
       setTenants(tenantList);
-    } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : 'No se pudieron cargar datos globales';
-      setError(message);
-      showError({
-        title: 'Error cargando datos',
-        message,
-      });
-    } finally {
-      setLoading(false);
+      setError('');
+    } catch {
+      // Silent fail for reload
     }
-  }, [search, showError]);
-
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
+  }, [search]);
 
   const createTenant = useCallback(
     async (data: SuperAdminTenantFormData) => {
@@ -52,7 +60,7 @@ export function useSuperAdminDashboard() {
           slug: data.slug,
           plan: data.plan,
         });
-        await loadData();
+        await reloadData();
         success({
           title: 'Cliente creado',
           message: `${data.name} fue agregado correctamente`,
@@ -68,7 +76,7 @@ export function useSuperAdminDashboard() {
         setCreatingTenant(false);
       }
     },
-    [loadData, success, showError],
+    [reloadData, success, showError],
   );
 
   const updateTenantStatus = useCallback(
@@ -76,7 +84,7 @@ export function useSuperAdminDashboard() {
       const nextStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
       try {
         await superAdminRepository.updateTenantStatus(tenant.id, nextStatus);
-        await loadData();
+        await reloadData();
         success({
           title: 'Estado actualizado',
           message: `${tenant.name} ahora está ${nextStatus === 'ACTIVE' ? 'activo' : 'suspendido'}`,
@@ -90,7 +98,7 @@ export function useSuperAdminDashboard() {
         });
       }
     },
-    [loadData, success, showError],
+    [reloadData, success, showError],
   );
 
   const deleteTenant = useCallback(
@@ -98,7 +106,7 @@ export function useSuperAdminDashboard() {
       setDeletingTenant(true);
       try {
         await superAdminRepository.deleteTenant(tenantId);
-        await loadData();
+        await reloadData();
         success({
           title: 'Cliente eliminado',
           message: `${tenantName} fue eliminado correctamente`,
@@ -114,7 +122,7 @@ export function useSuperAdminDashboard() {
         setDeletingTenant(false);
       }
     },
-    [loadData, success, showError],
+    [reloadData, success, showError],
   );
 
   return {
@@ -130,7 +138,6 @@ export function useSuperAdminDashboard() {
     tenants,
     creatingTenant,
     deletingTenant,
-    loadData,
     createTenant,
     updateTenantStatus,
     deleteTenant,

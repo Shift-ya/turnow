@@ -2,7 +2,8 @@ import { api, type ApiAppointment, type ApiProfessional, type ApiService, type A
 
 export const tenantAdminRepository = {
   loadOverview: (tenantId: string): Promise<ApiTenantOverview> => api.tenantOverview(tenantId),
-  listAppointments: (tenantId: string, date?: string): Promise<ApiAppointment[]> => api.listTenantAppointments(tenantId, date),
+  listAppointments: (tenantId: string, date?: string): Promise<ApiAppointment[]> =>
+    api.listTenantAppointments(tenantId, date ? { date } : {}),
   listProfessionals: (tenantId: string): Promise<ApiProfessional[]> => api.listTenantProfessionals(tenantId),
   createProfessional: (tenantId: string, payload: any): Promise<ApiProfessional> => api.createTenantProfessional(tenantId, payload),
   updateProfessional: (tenantId: string, professionalId: string, payload: any): Promise<ApiProfessional> =>
