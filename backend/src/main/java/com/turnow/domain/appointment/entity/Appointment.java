@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
+import com.turnow.domain.tenant.entity.Tenant;
 
 /**
  * Turno/Cita reservada.
@@ -37,8 +38,12 @@ public class Appointment {
     private UUID id;
 
     /** Aislamiento multi-tenant */
-    @Column(name = "tenant_id", nullable = false)
+    @Column(name = "tenant_id", nullable = false, insertable = false, updatable = false)
     private UUID tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
 
     /** ID del profesional que atiende */
     @Column(name = "professional_id", nullable = false)

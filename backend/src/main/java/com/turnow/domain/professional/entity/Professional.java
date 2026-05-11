@@ -1,6 +1,7 @@
 package com.turnow.domain.professional.entity;
 
 import com.turnow.domain.service.entity.Service;
+import com.turnow.domain.tenant.entity.Tenant;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -35,8 +36,12 @@ public class Professional {
     private UUID id;
 
     /** Aislamiento multi-tenant */
-    @Column(name = "tenant_id", nullable = false)
+    @Column(name = "tenant_id", nullable = false, insertable = false, updatable = false)
     private UUID tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
 
     /** Referencia al usuario del sistema (puede ser null si es externo) */
     @Column(name = "user_id")

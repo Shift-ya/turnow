@@ -1,6 +1,7 @@
 package com.turnow.domain.service.entity;
 
 import jakarta.persistence.*;
+import com.turnow.domain.tenant.entity.Tenant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -33,8 +34,12 @@ public class Service {
     private UUID id;
 
     /** Aislamiento multi-tenant */
-    @Column(name = "tenant_id", nullable = false)
+    @Column(name = "tenant_id", nullable = false, insertable = false, updatable = false)
     private UUID tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
 
     @Column(name = "name", nullable = false, length = 200)
     private String name;
