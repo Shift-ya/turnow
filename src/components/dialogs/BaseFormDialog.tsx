@@ -47,7 +47,7 @@ export const BaseFormDialog = ({
   cancelLabel = "Cancelar",
   isLoading = false,
   children,
-  triggerAsChild = false,
+  triggerAsChild: _triggerAsChild = false,
 }: BaseFormDialogProps) => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState<Record<string, string | number>>({});
@@ -78,10 +78,13 @@ export const BaseFormDialog = ({
     }
   };
 
+  const triggerNode = children ? children : <Button variant={triggerVariant}>{triggerLabel}</Button>;
+  const safeTriggerNode = React.isValidElement(triggerNode) ? triggerNode : <span>{triggerNode}</span>;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild={triggerAsChild}>
-        {children ? children : <Button variant={triggerVariant}>{triggerLabel}</Button>}
+      <DialogTrigger asChild>
+        {safeTriggerNode}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

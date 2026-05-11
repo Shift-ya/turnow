@@ -303,10 +303,12 @@ public class TenantAdminController {
     }
 
     private AppointmentDto toAppointmentDto(Appointment a, Tenant tenant) {
+        String tenantId = a.getTenantId() != null ? a.getTenantId().toString() : tenant.getId().toString();
+        String tenantName = tenant.getBusinessName();
         return new AppointmentDto(
             a.getId().toString(),
-            a.getTenantId().toString(),
-            tenant.getBusinessName(),
+            tenantId,
+            tenantName,
             a.getServiceId().toString(),
             a.getProfessionalId().toString(),
             a.getClientName(),
@@ -322,10 +324,12 @@ public class TenantAdminController {
     }
 
     private ProfessionalDto toProfessionalDto(Professional p, Tenant tenant) {
+        String tenantId = p.getTenantId() != null ? p.getTenantId().toString() : tenant.getId().toString();
+        String tenantName = tenant.getBusinessName();
         return new ProfessionalDto(
             p.getId().toString(),
-            p.getTenantId().toString(),
-            tenant.getBusinessName(),
+            tenantId,
+            tenantName,
             p.getFullName(),
             p.getEmail(),
             p.getPhone(),
@@ -335,10 +339,12 @@ public class TenantAdminController {
     }
 
     private ServiceDto toServiceDto(Service s, Tenant tenant) {
+        String tenantId = s.getTenantId() != null ? s.getTenantId().toString() : tenant.getId().toString();
+        String tenantName = tenant.getBusinessName();
         return new ServiceDto(
             s.getId().toString(),
-            s.getTenantId().toString(),
-            tenant.getBusinessName(),
+            tenantId,
+            tenantName,
             s.getName(),
             s.getDescription(),
             s.getDurationMinutes(),

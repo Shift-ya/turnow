@@ -12,7 +12,7 @@ import { tenantAdminRepository } from '../repositories/tenantAdminRepository';
 import type { ApiAppointment, ApiProfessional, ApiService, ApiTenantOverview } from '../lib/api';
 
 export function useTenantAdminDashboard(tenantId: string | undefined | null) {
-  const { success, error: showError } = useToast();
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<TenantAdminTab>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -69,9 +69,42 @@ export function useTenantAdminDashboard(tenantId: string | undefined | null) {
       setSavingProfessional(true);
       try {
         await tenantAdminRepository.createProfessional(tenantId, data);
-        await loadData();
-        success(TOAST_MESSAGES.professional.createSuccess);
+        try {
+          await loadData();
+          success(TOAST_MESSAGES.professional.createSuccess);
+        } catch (refreshError) {
+          const message = refreshError instanceof Error ? refreshError.message : 'Se creo el profesional, pero no se pudo refrescar la vista';
+          setError(message);
+          warning({
+            title: 'Profesional creado',
+            message: 'Se creo correctamente, pero no se pudo refrescar la lista. Recarga la pantalla.',
+          });
+        }
       } catch (requestError) {
+        // Mitiga falsos negativos: algunos backends pueden persistir y luego fallar al serializar la respuesta.
+        try {
+          await loadData();
+          const firstName = (data.firstName || '').trim().toLowerCase();
+          const lastName = (data.lastName || '').trim().toLowerCase();
+          const email = (data.email || '').trim().toLowerCase();
+          const created = professionals.some((professional) => {
+            const fullName = (professional.name || '').trim().toLowerCase();
+            const expectedName = `${firstName} ${lastName}`.trim();
+            const professionalEmail = (professional.email || '').trim().toLowerCase();
+            return (email && professionalEmail === email) || (expectedName && fullName === expectedName);
+          });
+
+          if (created) {
+            warning({
+              title: 'Profesional creado',
+              message: 'Se creo correctamente, aunque el backend devolvio un error al responder.',
+            });
+            return;
+          }
+        } catch {
+          // Si también falla el refresh, cae al error estándar.
+        }
+
         const message = requestError instanceof Error ? requestError.message : 'Error al crear profesional';
         setError(message);
         showError({
@@ -82,7 +115,7 @@ export function useTenantAdminDashboard(tenantId: string | undefined | null) {
         setSavingProfessional(false);
       }
     },
-    [loadData, showError, success, tenantId],
+    [loadData, professionals, showError, success, tenantId, warning],
   );
 
   const editProfessional = useCallback(
@@ -149,9 +182,35 @@ export function useTenantAdminDashboard(tenantId: string | undefined | null) {
           category: data.category,
           active: data.active ?? true,
         });
-        await loadData();
-        success(TOAST_MESSAGES.service.createSuccess);
+        try {
+          await loadData();
+          success(TOAST_MESSAGES.service.createSuccess);
+        } catch (refreshError) {
+          const message = refreshError instanceof Error ? refreshError.message : 'Se creo el servicio, pero no se pudo refrescar la vista';
+          setError(message);
+          warning({
+            title: 'Servicio creado',
+            message: 'Se creo correctamente, pero no se pudo refrescar la lista. Recarga la pantalla.',
+          });
+        }
       } catch (requestError) {
+        // Mitiga falsos negativos por fallo posterior a la persistencia.
+        try {
+          await loadData();
+          const serviceName = (data.name || '').trim().toLowerCase();
+          const created = services.some((service) => (service.name || '').trim().toLowerCase() === serviceName);
+
+          if (created) {
+            warning({
+              title: 'Servicio creado',
+              message: 'Se creo correctamente, aunque el backend devolvio un error al responder.',
+            });
+            return;
+          }
+        } catch {
+          // Si también falla el refresh, cae al error estándar.
+        }
+
         const message = requestError instanceof Error ? requestError.message : 'Error al crear servicio';
         setError(message);
         showError({
@@ -162,7 +221,7 @@ export function useTenantAdminDashboard(tenantId: string | undefined | null) {
         setSavingService(false);
       }
     },
-    [loadData, showError, success, tenantId],
+    [loadData, services, showError, success, tenantId, warning],
   );
 
   const editService = useCallback(
