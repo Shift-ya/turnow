@@ -4,6 +4,7 @@ import com.turnow.domain.appointment.entity.Appointment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,9 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface AppointmentRepository extends JpaRepository<Appointment, UUID> {
-
-    // ─── Búsquedas por tenant ─────────────────────────────────────────────────
+public interface AppointmentRepository extends JpaRepository<Appointment, UUID>, JpaSpecificationExecutor<Appointment> {
 
     Page<Appointment> findByTenantId(UUID tenantId, Pageable pageable);
 
@@ -26,8 +25,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
     List<Appointment> findByTenantIdAndAppointmentDateBetween(
         UUID tenantId, LocalDate from, LocalDate to
     );
-
-    // ─── Búsquedas por profesional ────────────────────────────────────────────
 
     List<Appointment> findByTenantIdAndProfessionalIdAndAppointmentDate(
         UUID tenantId, UUID professionalId, LocalDate date
@@ -48,13 +45,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
         @Param("to") LocalDate to
     );
 
-    // ─── Detección de conflictos ──────────────────────────────────────────────
-
-    /**
-     * Verifica si hay un turno que choca con el slot solicitado.
-     * Conflicto: el nuevo turno inicia antes de que termine el existente
-     *            Y termina después de que inicia el existente.
-     */
     @Query("""
         SELECT COUNT(a) > 0 FROM Appointment a
         WHERE a.tenantId = :tenantId
@@ -74,11 +64,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
         @Param("excludeId") UUID excludeId
     );
 
-    // ─── Cancelación pública ──────────────────────────────────────────────────
-
     Optional<Appointment> findByCancellationToken(String cancellationToken);
-
-    // ─── Estadísticas ─────────────────────────────────────────────────────────
 
     @Query("SELECT COUNT(a) FROM Appointment a WHERE a.tenantId = :tenantId AND a.status = :status")
     long countByTenantIdAndStatus(
@@ -96,8 +82,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
         @Param("from") LocalDate from,
         @Param("to") LocalDate to
     );
-
-    // ─── Recordatorios (programación) ────────────────────────────────────────
 
     @Query("""
         SELECT a FROM Appointment a

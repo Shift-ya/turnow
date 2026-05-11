@@ -1,5 +1,5 @@
 export type Role = 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'STAFF' | 'CLIENT';
-export type AppointmentStatus = 'BOOKED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW';
+export type AppointmentStatus = 'BOOKED' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW';
 export type SubscriptionPlan = 'BASIC' | 'PROFESSIONAL' | 'PREMIUM';
 export type SubscriptionStatus = 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
 export type TenantStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING';

@@ -169,9 +169,17 @@ export interface ApiAppointment {
   date: string;
   startTime: string;
   endTime: string;
-  status: 'BOOKED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  status: 'BOOKED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
   notes?: string;
   createdAt?: string | null;
+}
+
+export interface TenantAppointmentFilters {
+  professionalId?: string;
+  date?: string;
+  serviceId?: string;
+  clientName?: string;
+  status?: ApiAppointment['status'];
 }
 
 export interface ApiTenantOverview {
@@ -233,8 +241,17 @@ export const api = {
   deleteTenant: (tenantId: string) => request<void>(`/admin/super/tenants/${tenantId}`, { method: 'DELETE' }),
 
   tenantOverview: (tenantId: string) => request<ApiTenantOverview>(`/admin/tenant/${tenantId}/overview`),
-  listTenantAppointments: (tenantId: string, date?: string) =>
-    request<ApiAppointment[]>(`/admin/tenant/${tenantId}/appointments${date ? `?date=${date}` : ''}`),
+  listTenantAppointments: (tenantId: string, filters: TenantAppointmentFilters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.professionalId) params.set('professionalId', filters.professionalId);
+    if (filters.date) params.set('date', filters.date);
+    if (filters.serviceId) params.set('serviceId', filters.serviceId);
+    if (filters.clientName) params.set('clientName', filters.clientName);
+    if (filters.status) params.set('status', filters.status);
+
+    const query = params.toString();
+    return request<ApiAppointment[]>(`/admin/tenant/${tenantId}/appointments${query ? `?${query}` : ''}`);
+  },
   listTenantProfessionals: (tenantId: string) => request<ApiProfessional[]>(`/admin/tenant/${tenantId}/professionals`),
   createTenantProfessional: (tenantId: string, payload: any) =>
     request<ApiProfessional>(`/admin/tenant/${tenantId}/professionals`, { method: 'POST', body: JSON.stringify(payload) }),

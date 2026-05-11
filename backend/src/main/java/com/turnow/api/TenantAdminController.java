@@ -17,11 +17,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import jakarta.persistence.criteria.Predicate;
 
 @RestController
 @RequestMapping("/admin/tenant")
@@ -97,12 +101,49 @@ public class TenantAdminController {
     public ResponseEntity<List<AppointmentDto>> getAppointments(
         @AuthenticationPrincipal User currentUser,
         @PathVariable UUID tenantId,
-        @RequestParam(required = false) LocalDate date
+        @RequestParam(required = false) UUID professionalId,
+        @RequestParam(required = false) LocalDate date,
+        @RequestParam(required = false) UUID serviceId,
+        @RequestParam(required = false) String clientName,
+        @RequestParam(required = false) Appointment.AppointmentStatus status
     ) {
         requireTenantAccess(currentUser, tenantId);
-        List<Appointment> appointments = date == null
-            ? appointmentRepository.findByTenantId(tenantId, org.springframework.data.domain.Pageable.unpaged()).getContent()
-            : appointmentRepository.findByTenantIdAndAppointmentDate(tenantId, date);
+        Specification<Appointment> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("tenantId"), tenantId));
+
+            if (professionalId != null) {
+                predicates.add(cb.equal(root.get("professionalId"), professionalId));
+            }
+
+            if (date != null) {
+                predicates.add(cb.equal(root.get("appointmentDate"), date));
+            }
+
+            if (serviceId != null) {
+                predicates.add(cb.equal(root.get("serviceId"), serviceId));
+            }
+
+            if (clientName != null && !clientName.trim().isEmpty()) {
+                predicates.add(
+                    cb.like(
+                        cb.lower(root.get("clientName")),
+                        "%" + clientName.trim().toLowerCase() + "%"
+                    )
+                );
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        List<Appointment> appointments = appointmentRepository.findAll(
+            spec,
+            Sort.by(Sort.Order.asc("appointmentDate"), Sort.Order.asc("startTime"))
+        );
 
         return ResponseEntity.ok(appointments.stream().map(this::toAppointmentDto).toList());
     }
