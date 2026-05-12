@@ -124,8 +124,8 @@ export default function SuperAdminDashboard() {
             onSelectTab={setActiveTab}
             showSidebarToggle={false}
             actions={[
-              { key: 'bell', node: <Bell size={18} />, ariaLabel: 'Notificaciones' },
-              { key: 'settings', node: <Settings size={18} />, ariaLabel: 'Ajustes' },
+              /* { key: 'bell', node: <Bell size={18} />, ariaLabel: 'Notificaciones' }, 
+              { key: 'settings', node: <Settings size={18} />, ariaLabel: 'Ajustes' }, */
             ]}
           />
 

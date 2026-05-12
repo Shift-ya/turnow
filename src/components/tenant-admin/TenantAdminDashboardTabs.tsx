@@ -29,11 +29,11 @@ export function TenantAdminOverviewTab({ metrics, todayAppts, getServiceName, ge
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Turnos hoy" value={metrics.todayAppointments} icon={<CalendarDays size={20} />} />
-        <MetricCard title="Esta semana" value={metrics.weekAppointments} icon={<Clock size={20} />} />
-        <MetricCard title="Ingresos" value={`$${Math.round(metrics.revenue).toLocaleString()}`} icon={<DollarSign size={20} />} />
-        <MetricCard title="Total turnos" value={metrics.totalAppointments} icon={<UserCheck size={20} />} />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 max-md:grid-cols-2">
+        <MetricCard title="Turnos hoy" value={metrics.todayAppointments} icon={<CalendarDays className='size-5 max-md:size-4' />} />
+        <MetricCard title="Esta semana" value={metrics.weekAppointments} icon={<Clock className='size-5 max-md:size-4' />} />
+        <MetricCard title="Ingresos" value={`$${Math.round(metrics.revenue).toLocaleString()}`} icon={<DollarSign className='size-5 max-md:size-4' />} />
+        <MetricCard title="Total turnos" value={metrics.totalAppointments} icon={<UserCheck className='size-5 max-md:size-4' />} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">

@@ -14,8 +14,8 @@ export default function MetricCard({ title, value, icon, trend, trendUp, color }
     <div className={`${color ?? 'panel-light'} grain-overlay relative overflow-hidden p-5 transition duration-200 hover:-translate-y-1`}>
       <div className="relative flex items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#2ed7ff]">{title}</p>
-          <p className="mt-3 text-3xl font-bold tracking-[-0.05em] text-white">{value}</p>
+          <p className="max-md:text-[10px] text-sm font-semibold uppercase tracking-[0.24em] text-accent-500">{title}</p>
+          <p className="mt-3 text-3xl max-md:text-xl font-bold tracking-[-0.05em] text-white">{value}</p>
           {trend && (
             <p className={`mt-3 text-xs font-semibold ${trendUp ? 'text-emerald-300' : 'text-rose-300'}`}>
               {trendUp ? 'Sube' : 'Baja'} {trend}
