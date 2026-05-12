@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Briefcase, Calendar, Home, LogOut, Settings, Shield, X } from 'lucide-react';
+import { useInteractiveMenuLayout } from './hooks/useInteractiveMenuLayout';
+import { useProfileMenu } from './hooks/useProfileMenu';
 
 export type IconComponentType = React.ElementType<{ className?: string }>;
 
@@ -47,9 +49,7 @@ export const InteractiveMenu: React.FC<InteractiveMenuProps> = ({
   className = '',
   ariaLabel = 'Navegación principal',
 }) => {
-  const menuRef = useRef<HTMLElement | null>(null);
-  const tabsRef = useRef<HTMLDivElement | null>(null);
-  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  // refs are provided by hooks (useInteractiveMenuLayout, useProfileMenu)
   const finalItems = useMemo(() => {
     const isValid = items && Array.isArray(items) && items.length >= 2 && items.length <= 5;
     if (!isValid) {
@@ -70,88 +70,19 @@ export const InteractiveMenu: React.FC<InteractiveMenuProps> = ({
     }
   }, [finalItems.length, internalActiveIndex, isControlled]);
 
-  const textRefs = useRef<(HTMLElement | null)[]>([]);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicatorStyle, setIndicatorStyle] = useState<React.CSSProperties>({
-    left: 0,
-    top: 0,
-    width: 0,
-    height: 0,
-    opacity: 0,
-  });
-  const [menuOffsetStyle, setMenuOffsetStyle] = useState<React.CSSProperties>({
-    '--menu-shift': '0px',
-  } as React.CSSProperties);
-  const [profileOpen, setProfileOpen] = useState(false);
+  // layout & profile hooks (extracted)
+  const {
+    menuRef,
+    tabsRef,
+    itemRefs,
+    textRefs,
+    indicatorStyle,
+    menuOffsetStyle,
+  } = useInteractiveMenuLayout(finalItems.length, safeActiveIndex);
 
-  useEffect(() => {
-    if (!profileOpen) return;
+  const { profileOpen, setProfileOpen, profileMenuRef } = useProfileMenu(false);
 
-    const handleOutsideClick = (event: MouseEvent) => {
-      const targetNode = event.target as Node;
-      if (profileMenuRef.current && !profileMenuRef.current.contains(targetNode)) {
-        setProfileOpen(false);
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setProfileOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutsideClick);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [profileOpen]);
-
-  useEffect(() => {
-    const setLayoutMetrics = () => {
-      const activeItemElement = itemRefs.current[safeActiveIndex];
-      const activeTextElement = textRefs.current[safeActiveIndex];
-      const menuElement = menuRef.current;
-
-      if (activeItemElement && activeTextElement) {
-        const textWidth = activeTextElement.offsetWidth;
-        activeItemElement.style.setProperty('--lineWidth', `${textWidth}px`);
-      }
-
-      if (activeItemElement && menuElement) {
-        const itemRect = activeItemElement.getBoundingClientRect();
-        const menuRect = menuElement.getBoundingClientRect();
-        const tabsElement = tabsRef.current;
-        const tabsRect = tabsElement?.getBoundingClientRect();
-        const shift = tabsRect
-          ? Math.round(
-              (safeActiveIndex + 0.5) / finalItems.length * tabsRect.width - itemRect.width / 2 - (itemRect.left - tabsRect.left),
-            )
-          : 0;
-
-        setIndicatorStyle({
-          left: itemRect.left - menuRect.left,
-          top: itemRect.top - menuRect.top,
-          width: itemRect.width,
-          height: itemRect.height,
-          opacity: 1,
-        });
-
-        setMenuOffsetStyle({
-          '--menu-shift': `${shift}px`,
-        } as React.CSSProperties);
-      }
-    };
-
-    setLayoutMetrics();
-
-    window.addEventListener('resize', setLayoutMetrics);
-    return () => {
-      window.removeEventListener('resize', setLayoutMetrics);
-    };
-  }, [safeActiveIndex, finalItems]);
+  // layout and profile behavior handled by hooks
 
   const handleItemClick = (index: number) => {
     if (!isControlled) {
