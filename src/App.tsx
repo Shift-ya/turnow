@@ -49,7 +49,7 @@ export default function App() {
 
                 <Route path="*" element={<DashboardIndexRedirect />} />
               </Route>
-              <Route path="/booking" element={<PublicBooking />} />
+              <Route path="/booking/:tenantSlug" element={<PublicBooking />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -8,9 +8,15 @@ export default function LandingRoute() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const pageParam = params.get('page');
+    const tenantParam = params.get('tenant') || params.get('slug');
     const hostname = window.location.hostname;
 
-    if (pageParam === 'login' || pageParam === 'dashboard' || pageParam === 'booking') {
+    if (pageParam === 'booking' && tenantParam) {
+      navigate(`/booking/${tenantParam}`, { replace: true });
+      return;
+    }
+
+    if (pageParam === 'login' || pageParam === 'dashboard') {
       navigate(`/${pageParam}`, { replace: true });
       return;
     }

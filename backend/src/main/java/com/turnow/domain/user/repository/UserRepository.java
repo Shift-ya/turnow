@@ -21,6 +21,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmail(String email);
 
+    boolean existsByEmailIgnoreCase(String email);
+
     List<User> findByTenantId(UUID tenantId);
 
     Page<User> findByTenantIdAndRole(UUID tenantId, User.Role role, Pageable pageable);

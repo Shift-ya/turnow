@@ -145,4 +145,11 @@ export const TOAST_MESSAGES = {
       message: 'Por favor verifica antes de continuar',
     },
   },
+
+  superAdmin: {
+    tenantCreateConflict: {
+      title: '⚠️ No se pudo crear el cliente',
+      message: 'Ya existe un cliente con ese slug o email. Revisa los datos e intenta de nuevo.',
+    },
+  },
 } as const;

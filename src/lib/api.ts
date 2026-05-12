@@ -3,6 +3,16 @@ import { getApiBaseUrl } from './runtimeConfig';
 const TOKEN_KEY = 'turnow_token';
 let isRefreshing = false;
 
+export class ApiHttpError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ApiHttpError';
+    this.status = status;
+  }
+}
+
 export function getStoredToken(): string | null {
   try {
     return localStorage.getItem(TOKEN_KEY);
@@ -102,7 +112,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // no-op
     }
-    throw new Error(message);
+    throw new ApiHttpError(res.status, message);
   }
 
   if (res.status === 204) {

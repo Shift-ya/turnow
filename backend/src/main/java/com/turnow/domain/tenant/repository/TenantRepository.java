@@ -18,7 +18,11 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 
     boolean existsBySlug(String slug);
 
+    boolean existsBySlugIgnoreCase(String slug);
+
     boolean existsByEmail(String email);
+
+    boolean existsByEmailIgnoreCase(String email);
 
     Page<Tenant> findByStatus(Tenant.TenantStatus status, Pageable pageable);
 

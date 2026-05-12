@@ -3,9 +3,11 @@ import { useToast } from './useToast';
 import type { SuperAdminDashboardData, SuperAdminTenantFormData } from '../types/superAdminDashboard';
 import type { ApiTenant } from '../lib/api';
 import { superAdminRepository } from '../repositories/superAdminRepository';
+import { ApiHttpError } from '../lib/api';
+import { TOAST_MESSAGES } from '../types/toast';
 
 export function useSuperAdminDashboard() {
-  const { success, error: showError } = useToast();
+  const { success, error: showError, warning } = useToast();
   const [search, setSearch] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -67,6 +69,12 @@ export function useSuperAdminDashboard() {
           message: `${data.name} fue agregado correctamente`,
         });
       } catch (requestError) {
+        if (requestError instanceof ApiHttpError && requestError.status === 409) {
+          warning(TOAST_MESSAGES.superAdmin.tenantCreateConflict);
+          setError(requestError.message);
+          return;
+        }
+
         const message = requestError instanceof Error ? requestError.message : 'Error al crear el cliente';
         setError(message);
         showError({

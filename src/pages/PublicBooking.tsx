@@ -12,15 +12,13 @@ import {
   ShieldCheck,
   User,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { ApiProfessional, ApiService, PublicTenant } from '../lib/api';
 import { useToast } from '../hooks/useToast';
 import { TOAST_MESSAGES } from '../types/toast';
 import { publicBookingRepository } from '../repositories/publicBookingRepository';
 
 type Step = 1 | 2 | 3;
-
-const DEMO_SLUG = 'bella-vida-spa';
 
 function toIsoDate(d: Date) {
   const y = d.getFullYear();
@@ -49,6 +47,7 @@ const stepMeta: Record<Step, { label: string; title: string; description: string
 
 export default function PublicBooking() {
   const navigate = useNavigate();
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { success, error: showError } = useToast();
   const [tenant, setTenant] = useState<PublicTenant | null>(null);
   const [services, setServices] = useState<ApiService[]>([]);
@@ -70,12 +69,18 @@ export default function PublicBooking() {
   const [calDate, setCalDate] = useState(new Date());
 
   useEffect(() => {
+    if (!tenantSlug) {
+      setError('URL de reserva invalida: falta el identificador del tenant.');
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
       try {
         setLoading(true);
         const [tenantData, serviceData] = await Promise.all([
-          publicBookingRepository.loadTenant(DEMO_SLUG),
-          publicBookingRepository.loadServices(DEMO_SLUG),
+          publicBookingRepository.loadTenant(tenantSlug),
+          publicBookingRepository.loadServices(tenantSlug),
         ]);
         setTenant(tenantData);
         setServices(serviceData);
@@ -86,22 +91,22 @@ export default function PublicBooking() {
       }
     };
 
-    load();
-  }, []);
+    void load();
+  }, [tenantSlug]);
 
   useEffect(() => {
-    if (!selectedService) return;
+    if (!selectedService || !tenantSlug) return;
 
-    publicBookingRepository.loadProfessionals(DEMO_SLUG, selectedService.id)
+    publicBookingRepository.loadProfessionals(tenantSlug, selectedService.id)
       .then(setProfessionals)
       .catch((e) => setError(e instanceof Error ? e.message : 'No se pudieron cargar profesionales'));
-  }, [selectedService]);
+  }, [selectedService, tenantSlug]);
 
   useEffect(() => {
-    if (!selectedService || !selectedProfessional || !selectedDate) return;
+    if (!selectedService || !selectedProfessional || !selectedDate || !tenantSlug) return;
 
     const date = toIsoDate(selectedDate);
-    publicBookingRepository.loadSlots(DEMO_SLUG, selectedProfessional.id, selectedService.id, date)
+    publicBookingRepository.loadSlots(tenantSlug, selectedProfessional.id, selectedService.id, date)
       .then((response) => {
         setTimeSlots(
           response.slots
@@ -110,15 +115,15 @@ export default function PublicBooking() {
         );
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'No se pudieron cargar horarios'));
-  }, [selectedService, selectedProfessional, selectedDate]);
+  }, [selectedService, selectedProfessional, selectedDate, tenantSlug]);
 
   const handleBook = async () => {
-    if (!selectedDate || !selectedTime || !selectedService || !selectedProfessional) return;
+    if (!selectedDate || !selectedTime || !selectedService || !selectedProfessional || !tenantSlug) return;
     if (!clientName || !clientEmail || !clientPhone) return;
 
     try {
       setBooking(true);
-      await publicBookingRepository.createAppointment(DEMO_SLUG, {
+      await publicBookingRepository.createAppointment(tenantSlug, {
         professionalId: selectedProfessional.id,
         serviceId: selectedService.id,
         appointmentDate: toIsoDate(selectedDate),

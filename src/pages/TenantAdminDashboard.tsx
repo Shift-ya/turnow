@@ -103,7 +103,10 @@ export default function TenantAdminDashboard() {
           sidebarOpen={dashboard.sidebarOpen}
           onClose={() => dashboard.setSidebarOpen(false)}
           onSelectTab={setActiveTab}
-          onOpenPublicBooking={() => navigate('/booking')}
+          onOpenPublicBooking={() => {
+            if (!dashboard.tenant?.slug) return;
+            navigate(`/booking/${dashboard.tenant.slug}`);
+          }}
           onLogout={handleLogout}
         />
 

@@ -5,6 +5,8 @@ import com.turnow.domain.tenant.repository.TenantRepository;
 import com.turnow.domain.user.entity.User;
 import com.turnow.domain.user.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.turnow.infrastructure.exception.BusinessException;
+import com.turnow.infrastructure.exception.ConflictException;
 import com.turnow.infrastructure.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +18,16 @@ import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/admin/super")
 @RequiredArgsConstructor
 public class SuperAdminController {
+
+    private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
 
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
@@ -69,10 +75,21 @@ public class SuperAdminController {
     @PostMapping("/tenants")
     public ResponseEntity<TenantDto> createTenant(@AuthenticationPrincipal User currentUser, @RequestBody TenantCreateRequest request) {
         requireSuperAdmin(currentUser);
+        String normalizedEmail = normalizeEmail(request.email());
+        String normalizedSlug = normalizeSlug(request.slug(), request.name());
+
+        if (tenantRepository.existsBySlugIgnoreCase(normalizedSlug)) {
+            throw new ConflictException("Ya existe un tenant con ese slug.");
+        }
+
+        if (tenantRepository.existsByEmailIgnoreCase(normalizedEmail) || userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new ConflictException("Ya existe un tenant o usuario con ese email.");
+        }
+
         Tenant tenant = Tenant.builder()
             .businessName(request.name())
-            .slug(request.slug())
-            .email(request.email())
+            .slug(normalizedSlug)
+            .email(normalizedEmail)
             .phone(request.phone())
             .address(request.address())
             .status(Tenant.TenantStatus.ACTIVE)
@@ -93,7 +110,7 @@ public class SuperAdminController {
 
         User user = User.builder()
             .tenant(saved)
-            .email(request.email() != null ? request.email().toLowerCase() : null)
+            .email(normalizedEmail)
             .passwordHash(passwordEncoder.encode(rawPassword))
             .firstName(firstName.isEmpty() ? "" : firstName)
             .lastName(lastName.isEmpty() ? "" : lastName)
@@ -202,5 +219,34 @@ public class SuperAdminController {
         if (currentUser == null || currentUser.getRole() != User.Role.SUPER_ADMIN) {
             throw new org.springframework.security.access.AccessDeniedException("No autorizado");
         }
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new BusinessException("El email es obligatorio");
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeSlug(String slug, String fallbackName) {
+        String base = slug;
+        if (base == null || base.trim().isBlank()) {
+            base = fallbackName;
+        }
+
+        if (base == null || base.trim().isBlank()) {
+            throw new BusinessException("El slug es obligatorio");
+        }
+
+        String normalized = base.trim().toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("^-+|-+$", "")
+            .replaceAll("-+", "-");
+
+        if (!SLUG_PATTERN.matcher(normalized).matches()) {
+            throw new BusinessException("El slug solo puede contener letras, números y guiones.");
+        }
+
+        return normalized;
     }
 }
