@@ -10,6 +10,7 @@ interface DashboardHeaderProps<TTab extends string> {
   onOpenSidebar: () => void;
   onSelectTab: (tab: TTab) => void;
   actions?: DashboardAction[];
+  showSidebarToggle?: boolean;
 }
 
 export function DashboardHeader<TTab extends string>({
@@ -21,15 +22,18 @@ export function DashboardHeader<TTab extends string>({
   onOpenSidebar,
   onSelectTab,
   actions = [],
+  showSidebarToggle = true,
 }: DashboardHeaderProps<TTab>) {
   const activeLabel = navItems.find((item) => item.id === activeTab)?.label || title;
 
   return (
-    <header className="panel-light mb-6 flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <header className="panel-light mb-6 flex flex-col gap-4 px-6 py-5 sm:flex-row max-md:flex-row max-md:justify-between sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
-        <button className="button-ghost-luxe h-11 w-11 rounded-full p-0 lg:hidden" onClick={onOpenSidebar}>
-          <Menu size={18} />
-        </button>
+        {showSidebarToggle && (
+          <button className="button-ghost-luxe h-11 w-11 rounded-full p-0 lg:hidden" onClick={onOpenSidebar}>
+            <Menu size={18} />
+          </button>
+        )}
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent-500">{eyebrow}</p>
           <h1 className="font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white">{activeLabel}</h1>

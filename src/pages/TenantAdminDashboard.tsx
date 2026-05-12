@@ -12,6 +12,7 @@ import type {
   TenantAdminTenantFormData,
 } from '../types/tenantAdminDashboard';
 import type { ApiAppointment, ApiProfessional, ApiService, ApiTenant, ApiTenantOverview } from '../lib/api';
+import { InteractiveMenu, type InteractiveMenuItem } from '../components/ui/modern-mobile-menu';
 
 const navItems: TenantAdminNavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 size={18} />, caption: 'KPIs y foco diario' },
@@ -28,6 +29,13 @@ const tabToSegment: Record<TenantAdminTab, string> = {
   services: 'services',
   settings: 'settings',
 };
+
+const mobileMenuItems: InteractiveMenuItem[] = [
+  { label: 'Metricas', icon: BarChart3 },
+  { label: 'Calendario', icon: CalendarDays },
+  { label: 'Profesionales', icon: Users },
+  { label: 'Servicios', icon: Briefcase },
+];
 
 function parseActiveTab(segment: string | undefined): TenantAdminTab {
   switch (segment) {
@@ -79,6 +87,7 @@ export default function TenantAdminDashboard() {
   const dashboard = useTenantAdminDashboard(tenantId);
   const pathSegment = location.pathname.split('/')[2];
   const activeTab = parseActiveTab(pathSegment);
+  const activeIndex = navItems.findIndex((item) => item.id === activeTab);
 
   const setActiveTab = (nextTab: TenantAdminTab) => {
     navigate(`/dashboard/${tabToSegment[nextTab]}`);
@@ -94,23 +103,23 @@ export default function TenantAdminDashboard() {
   }
 
   return (
-    <div className="app-shell min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+    <div className="app-shell min-h-screen px-4 py-5 pb-32 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-7xl gap-6">
-        <TenantAdminSidebar
-          tenantName={dashboard.tenant?.name || 'Tenant'}
-          navItems={navItems}
-          activeTab={activeTab}
-          sidebarOpen={dashboard.sidebarOpen}
-          onClose={() => dashboard.setSidebarOpen(false)}
-          onSelectTab={setActiveTab}
-          onOpenPublicBooking={() => {
-            if (!dashboard.tenant?.slug) return;
-            navigate(`/booking/${dashboard.tenant.slug}`);
-          }}
-          onLogout={handleLogout}
-        />
-
-        {dashboard.sidebarOpen && <div className="fixed inset-0 z-30 bg-black/55 lg:hidden" onClick={() => dashboard.setSidebarOpen(false)} />}
+        <div className="hidden lg:block">
+          <TenantAdminSidebar
+            tenantName={dashboard.tenant?.name || 'Tenant'}
+            navItems={navItems}
+            activeTab={activeTab}
+            sidebarOpen={dashboard.sidebarOpen}
+            onClose={() => dashboard.setSidebarOpen(false)}
+            onSelectTab={setActiveTab}
+            onOpenPublicBooking={() => {
+              if (!dashboard.tenant?.slug) return;
+              navigate(`/booking/${dashboard.tenant.slug}`);
+            }}
+            onLogout={handleLogout}
+          />
+        </div>
 
         <div className="min-w-0 flex-1">
           <DashboardHeader<TenantAdminTab>
@@ -120,6 +129,7 @@ export default function TenantAdminDashboard() {
             eyebrow="Panel operativo"
             onOpenSidebar={() => dashboard.setSidebarOpen(true)}
             onSelectTab={setActiveTab}
+            showSidebarToggle={false}
             actions={[{ key: 'bell', node: <Bell size={18} />, ariaLabel: 'Notificaciones' }]}
           />
 
@@ -158,6 +168,30 @@ export default function TenantAdminDashboard() {
           </main>
         </div>
       </div>
+
+      <InteractiveMenu
+        className="lg:hidden"
+        items={mobileMenuItems}
+        activeIndex={activeIndex < 0 ? 0 : activeIndex}
+        profile={{
+          name: user?.name || 'Usuario',
+          email: user?.email || '',
+          onLogout: handleLogout,
+          actions: [
+            {
+              label: 'Editar datos del negocio',
+              icon: Settings,
+              onClick: () => setActiveTab('settings'),
+            },
+          ],
+        }}
+        onItemSelect={(index) => {
+          const nextTab = navItems[index]?.id;
+          if (!nextTab) return;
+          setActiveTab(nextTab);
+        }}
+        ariaLabel="Navegación del panel"
+      />
     </div>
   );
 }

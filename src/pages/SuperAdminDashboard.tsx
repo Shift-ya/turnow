@@ -7,6 +7,7 @@ import { DashboardHeader } from '../components/dashboard/DashboardHeader';
 import { useAuth } from '../context/AuthContext';
 import type { SuperAdminNavItem, SuperAdminTab, SuperAdminTenantFormData } from '../types/superAdminDashboard';
 import type { ApiGlobalOverview, ApiTenant } from '../lib/api';
+import { InteractiveMenu, type InteractiveMenuItem } from '../components/ui/modern-mobile-menu';
 
 const navItems: SuperAdminNavItem[] = [
   { id: 'overview', label: 'Dashboard', icon: <BarChart3 size={18} />, caption: 'Vista general' },
@@ -19,6 +20,12 @@ const tabToSegment: Record<SuperAdminTab, string> = {
   tenants: 'clients',
   plans: 'plans',
 };
+
+const mobileMenuItems: InteractiveMenuItem[] = [
+  { label: 'Metricas', icon: BarChart3 },
+  { label: 'Clientes', icon: Building2 },
+  { label: 'Planes', icon: Layers3 },
+];
 
 function parseActiveTab(segment: string | undefined): SuperAdminTab {
   switch (segment) {
@@ -79,6 +86,7 @@ export default function SuperAdminDashboard() {
 
   const pathSegment = location.pathname.split('/')[2];
   const activeTab = parseActiveTab(pathSegment);
+  const activeIndex = navItems.findIndex((item) => item.id === activeTab);
 
   const setActiveTab = (nextTab: SuperAdminTab) => {
     navigate(`/dashboard/${tabToSegment[nextTab]}`);
@@ -90,20 +98,20 @@ export default function SuperAdminDashboard() {
   };
 
   return (
-    <div className="app-shell min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+    <div className="app-shell min-h-screen px-4 py-5 pb-32 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-7xl gap-6">
-        <SuperAdminSidebar
-          activeTab={activeTab}
-          navItems={navItems}
-          sidebarOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          onSelectTab={setActiveTab}
-          onLogout={handleLogout}
-          metrics={metrics}
-          user={user}
-        />
-
-        {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/55 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+        <div className="hidden lg:block">
+          <SuperAdminSidebar
+            activeTab={activeTab}
+            navItems={navItems}
+            sidebarOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            onSelectTab={setActiveTab}
+            onLogout={handleLogout}
+            metrics={metrics}
+            user={user}
+          />
+        </div>
 
         <div className="min-w-0 flex-1">
           <DashboardHeader<SuperAdminTab>
@@ -114,6 +122,7 @@ export default function SuperAdminDashboard() {
             subtitle="Gestion de toda la plataforma"
             onOpenSidebar={() => setSidebarOpen(true)}
             onSelectTab={setActiveTab}
+            showSidebarToggle={false}
             actions={[
               { key: 'bell', node: <Bell size={18} />, ariaLabel: 'Notificaciones' },
               { key: 'settings', node: <Settings size={18} />, ariaLabel: 'Ajustes' },
@@ -148,6 +157,23 @@ export default function SuperAdminDashboard() {
           </main>
         </div>
       </div>
+
+      <InteractiveMenu
+        className="lg:hidden"
+        items={mobileMenuItems}
+        activeIndex={activeIndex < 0 ? 0 : activeIndex}
+        profile={{
+          name: user?.name || 'Usuario',
+          email: user?.email || '',
+          onLogout: handleLogout,
+        }}
+        onItemSelect={(index) => {
+          const nextTab = navItems[index]?.id;
+          if (!nextTab) return;
+          setActiveTab(nextTab);
+        }}
+        ariaLabel="Navegación del panel"
+      />
     </div>
   );
 }
