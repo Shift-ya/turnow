@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "packageManager": "pnpm@10.20.0",
   "scripts": {
     "dev": "vite",
-    "prebuild": "chmod +x node_modules/.bin/vite || true",
-    "build": "npm exec vite -- build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
