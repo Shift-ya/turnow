@@ -2,7 +2,7 @@ import AppointmentCardSkeleton from './AppointmentCardSkeleton';
 
 export default function TodayAppointmentsSkeleton() {
   return (
-    <div className="panel-light animate-pulse p-6 max-md:px-0 max-md:rounded-none">
+    <div className="panel-light animate-pulse p-6">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <div className="mb-2 h-3 w-24 rounded bg-white/10"></div>
