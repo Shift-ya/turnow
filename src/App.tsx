@@ -28,6 +28,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingRoute />} />
+            <Route path="/booking/:tenantSlug" element={<PublicBooking />} />
             <Route element={<RequireGuestLayout />}>
               <Route path="/login" element={<LoginPage />} />
             </Route>
@@ -49,7 +50,6 @@ export default function App() {
 
                 <Route path="*" element={<DashboardIndexRedirect />} />
               </Route>
-              <Route path="/booking/:tenantSlug" element={<PublicBooking />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

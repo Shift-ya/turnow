@@ -13,6 +13,7 @@ import {
   User,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import type { ApiProfessional, ApiService, PublicTenant } from '../lib/api';
 import { useToast } from '../hooks/useToast';
 import { TOAST_MESSAGES } from '../types/toast';
@@ -52,6 +53,7 @@ const stepMeta: Record<Step, { label: string; title: string; description: string
 
 export default function PublicBooking() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { success, error: showError } = useToast();
   const [tenant, setTenant] = useState<PublicTenant | null>(null);
@@ -189,6 +191,11 @@ export default function PublicBooking() {
     return <div className="app-shell grid min-h-screen place-items-center text-rose-700">{error || 'Tenant no disponible'}</div>;
   }
 
+  const canSeeBackButton =
+    !!user &&
+    (user.role === 'TENANT_ADMIN' || user.role === 'STAFF') &&
+    user.tenantId === tenant.id;
+
   const accentStyle = { backgroundColor: tenant.primaryColor };
   const currentStep = stepMeta[step];
 
@@ -197,9 +204,11 @@ export default function PublicBooking() {
       <div className="mx-auto max-w-7xl">
         <header className="panel-light mb-6 flex flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="button-ghost-luxe rounded-full px-4 py-2.5">
-              <ArrowLeft size={16} /> Volver
-            </button>
+            {canSeeBackButton && (
+              <button onClick={() => navigate('/dashboard')} className="button-ghost-luxe rounded-full px-4 py-2.5">
+                <ArrowLeft size={16} /> Volver
+              </button>
+            )}
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-[18px] text-sm font-bold text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)]" style={accentStyle}>
                 {tenant.businessName[0]}
