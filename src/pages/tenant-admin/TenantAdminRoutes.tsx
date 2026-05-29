@@ -6,17 +6,28 @@ import {
   TenantAdminSettingsTab,
 } from '../../components/tenant-admin/TenantAdminDashboardTabs';
 import { useTenantAdminDashboardOutletContext } from '../TenantAdminDashboard';
+import { useNavigate } from 'react-router-dom';
 
 export function TenantAdminOverviewRoute() {
   const context = useTenantAdminDashboardOutletContext();
+  const navigate = useNavigate();
 
   return (
     <TenantAdminOverviewTab
+      tenant={context.tenant}
+      professionals={context.professionals}
+      services={context.services}
       metrics={context.metrics}
       todayAppts={context.todayAppts}
       getServiceName={context.getServiceName}
       getProfName={context.getProfName}
       isLoading={context.loading}
+      onOpenServices={() => navigate('/dashboard/services')}
+      onOpenProfessionals={() => navigate('/dashboard/professionals')}
+      onOpenBooking={() => {
+        if (!context.tenant?.slug) return;
+        navigate(`/booking/${context.tenant.slug}`);
+      }}
     />
   );
 }

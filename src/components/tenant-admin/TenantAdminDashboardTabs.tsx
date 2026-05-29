@@ -5,6 +5,7 @@ import type {
   TenantAdminServiceFormData,
   TenantAdminTenantFormData,
 } from '../../types/tenantAdminDashboard';
+import { TenantOnboardingPanel } from './TenantOnboardingPanel';
 import CalendarAppointmentsPanel from './CalendarAppointmentsPanel';
 import PerformancePanel from './PerformancePanel';
 import ProfessionalsGrid from './ProfessionalsGrid';
@@ -19,14 +20,32 @@ import ServicesSkeleton from '../skeletons/ServicesSkeleton';
 import SettingsFormSkeleton from '../skeletons/SettingsFormSkeleton';
 
 interface TenantAdminOverviewTabProps {
+  tenant: ApiTenant | null;
+  professionals: ApiProfessional[];
+  services: ApiService[];
   metrics: TenantAdminDashboardData['metrics'];
   todayAppts: ApiAppointment[];
   getServiceName: (id: string) => string;
   getProfName: (id: string) => string;
   isLoading?: boolean;
+  onOpenServices: () => void;
+  onOpenProfessionals: () => void;
+  onOpenBooking: () => void;
 }
 
-export function TenantAdminOverviewTab({ metrics, todayAppts, getServiceName, getProfName, isLoading }: TenantAdminOverviewTabProps) {
+export function TenantAdminOverviewTab({
+  tenant,
+  professionals,
+  services,
+  metrics,
+  todayAppts,
+  getServiceName,
+  getProfName,
+  isLoading,
+  onOpenServices,
+  onOpenProfessionals,
+  onOpenBooking,
+}: TenantAdminOverviewTabProps) {
   if (isLoading) {
     return <TenantAdminOverviewSkeleton />;
   }
@@ -37,6 +56,16 @@ export function TenantAdminOverviewTab({ metrics, todayAppts, getServiceName, ge
 
   return (
     <div className="space-y-6">
+      <TenantOnboardingPanel
+        tenant={tenant}
+        services={services}
+        professionals={professionals}
+        todayAppointmentsCount={todayAppts.length}
+        onOpenServices={onOpenServices}
+        onOpenProfessionals={onOpenProfessionals}
+        onOpenBooking={onOpenBooking}
+      />
+
       <TenantOverviewMetrics metrics={metrics} />
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">

@@ -93,6 +93,11 @@ export default function TenantAdminDashboard() {
     navigate(`/dashboard/${tabToSegment[nextTab]}`);
   };
 
+  const openPublicBooking = () => {
+    if (!dashboard.tenant?.slug) return;
+    navigate(`/booking/${dashboard.tenant.slug}`);
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/', { replace: true });
@@ -114,10 +119,7 @@ export default function TenantAdminDashboard() {
               sidebarOpen={dashboard.sidebarOpen}
               onClose={() => dashboard.setSidebarOpen(false)}
               onSelectTab={setActiveTab}
-              onOpenPublicBooking={() => {
-                if (!dashboard.tenant?.slug) return;
-                navigate(`/booking/${dashboard.tenant.slug}`);
-              }}
+              onOpenPublicBooking={openPublicBooking}
               onLogout={handleLogout}
             />
           </div>
