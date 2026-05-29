@@ -22,6 +22,7 @@ export function TenantOnboardingPanel({
   onOpenBooking,
 }: TenantOnboardingPanelProps) {
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const publicBookingUrl = useMemo(() => {
     if (!tenant?.slug) return '';
@@ -79,6 +80,9 @@ export function TenantOnboardingPanel({
   ];
 
   const whatsappHref = shareText ? `https://wa.me/?text=${encodeURIComponent(shareText)}` : '#';
+  const qrUrl = publicBookingUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(publicBookingUrl)}`
+    : '';
 
   return (
     <section className="panel-light grain-overlay relative overflow-hidden px-6 py-6 sm:px-8 sm:py-7">
@@ -105,6 +109,9 @@ export function TenantOnboardingPanel({
             <a href={whatsappHref} target="_blank" rel="noreferrer" className="button-luxe flex w-min text-nowrap rounded-full px-4 py-2.5 text-sm">
               <MessageCircleMore size={16} /> Compartir por WhatsApp
             </a>
+            <button onClick={() => setShowQr(true)} className="button-ghost-luxe rounded-full px-4 py-2.5 text-sm">
+              <ExternalLink size={16} /> Mostrar QR
+            </button>
           </div>
         </div>
 
@@ -147,6 +154,22 @@ export function TenantOnboardingPanel({
           </div>
         </div>
       </div>
+      {showQr && (
+        <div className="fixed inset-0 z-50 grid place-items-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowQr(false)} />
+          <div className="relative z-10 panel-light rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-white">QR para reservas</h3>
+            <p className="mt-2 text-sm text-[#a1a1aa]">Escanea para abrir la pagina publica del booking.</p>
+            <div className="mt-4 flex items-center justify-center">
+              {qrUrl ? <img src={qrUrl} alt="QR Booking" className="h-64 w-64 rounded" /> : <div className="h-64 w-64 grid place-items-center">No disponible</div>}
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <a href={qrUrl} download={`qr-${tenant?.slug || 'booking'}.png`} className="button-luxe rounded-full px-4 py-2">Descargar QR</a>
+              <button onClick={() => setShowQr(false)} className="button-ghost-luxe rounded-full px-4 py-2">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
