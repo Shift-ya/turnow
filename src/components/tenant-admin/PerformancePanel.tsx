@@ -1,4 +1,3 @@
-import { TrendingUp } from 'lucide-react';
 import type { TenantAdminDashboardData } from '../../types/tenantAdminDashboard';
 
 interface Props {
@@ -6,10 +5,21 @@ interface Props {
 }
 
 export default function PerformancePanel({ metrics }: Props) {
+  if (!metrics) {
+    return (
+      <div className="panel-dark p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-400">Rendimiento</p>
+        <h2 className="mt-3 font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white">
+          No hay datos disponibles.
+        </h2>
+      </div>
+    );
+  }
+
   return (
     <div className="panel-dark p-6">
       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-400">Rendimiento</p>
-      <h2 className="mt-3 font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white">La operacion se entiende de un vistazo.</h2>
+      <h2 className="mt-3 font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white">La operación se entiende de un vistazo.</h2>
       <div className="mt-6 grid gap-3">
         {[
           ['Completados', `${metrics.completedRate}%`],
@@ -21,10 +31,6 @@ export default function PerformancePanel({ metrics }: Props) {
             <p className="mt-2 font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white">{value}</p>
           </div>
         ))}
-      </div>
-      <div className="mt-6 flex items-center gap-3 rounded-[22px] border border-emerald-400/20 bg-emerald-400/10 px-4 py-4 text-sm text-emerald-100">
-        <TrendingUp size={16} />
-        Datos reales cargados desde API
       </div>
     </div>
   );
